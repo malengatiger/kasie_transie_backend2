@@ -1,0 +1,29 @@
+0. 🍎🍎Setup production accounts - GCP Console + Firebase, MongoDB Atlas
+0.1 🍎🍎Set up production database in Europe West 1
+0.2 🍎🍎Deploy backend - run deploy.sh
+0.3 🌀🌀Decide on app deployment to an MDM
+
+1. 🍎🍎Build database - add countries, cities,
+    /addCountriesStatesCitiesToDB
+    /addSouthAfricanCitiesToDB
+
+2. 🍎🍎 Set up production test association - The Most Awesome
+        /generateFakeAssociation
+        /generateFakeVehiclesFromFile
+    Setup users.csv or users.json and vehicles.csv or vehicle.json
+    Example files can be downloaded for association to get started
+
+    /downloadExampleUsersFile
+    /downloadExampleVehiclesFile
+    🍎🍎
+    /registerAssociation
+    /uploadUserFile
+    /uploadVehicleFile
+
+3. 🌀🌀Set up Eldorado Park folks!
+3.1 🌀🌀create user and vehicle files
+3.2 🌀🌀assign owners to vehicles
+3.2.1 🌀🌀Print QRCodes for all --> /getAssociationVehicles
+3.3 🌀🌀install all apps on our own devices to tree-shake the setup process
+3.4 🌀🌀install apps on Eldorado Park devices
+3.5 🍎🍎🍎🍎 Ready to Rumble!!

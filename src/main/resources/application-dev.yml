@@ -1,0 +1,30 @@
+bucketName: aubsbucket01
+firstNames: firstNames.json
+mongoSecretsName: mongo
+mongoSecretsVersion: 1
+realmSecretsName: realm
+realmSecretsVersion: 2
+doIndex: 1
+mongoString: mongodb://localhost:27017
+my-app-secret-1: ${sm://application-secret/latest}
+placesAPIKeyName: places_api_key
+projectId: thermal-effort-366015
+secretsVersion: 2
+databaseName: kasie_transie_db
+requestsPerSecond: 6
+server:
+    connection-timeout: 90s
+    max-http-header-size: 80KB
+    port: 8080
+    tomcat:
+        max-http-get-size: 4MB
+        max-http-post-size: 4MB
+        max-swallow-size: 4MB
+        threads:
+            max: 200
+spring:
+    data:
+        mongodb:
+            database: kasie_transie_db
+storageBucket: thermal-effort-366015.appspot.com
+surnames: surnames.json

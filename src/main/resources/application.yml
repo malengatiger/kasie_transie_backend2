@@ -1,0 +1,65 @@
+application:
+    title: KasieTransie Backend
+    version: Geo Version 1.0.0
+cloudStorageDirectory: kasieMedia
+email: bryangrant217x@gmail.com
+requestsPerSecond: 10
+spring:
+    mail:
+        host: smtp.gmail.com
+        password: khaya#3HasACat
+        port: 587
+        properties:
+            mail:
+                smtp:
+                    auth: true
+                    starttls:
+                        enable: true
+        username: bryangrant217x@gmail.com
+    mongodb:
+      embedded:
+            version: 3.6.5
+    profiles:
+        active: prod
+    servlet:
+        multipart:
+            max-file-size: 1000MB
+            max-request-size: 1000MB
+    cache:
+        cache-names:
+            - rate-limit-buckets
+        caffeine:
+            spec: maximumSize=100000,expireAfterAccess=3600s
+bucket4j:
+    enabled: true
+    filters:
+        - cache-name: rate-limit-buckets
+          url: /api/v1/area.*
+          strategy: first
+          http-response-body: "{ \"status\": 429, \"error\": \"Too Many Requests\", \"message\": \"You have exhausted your API Request Quota\" }"
+          rate-limits:
+              - expression: "getHeader('X-api-key')"
+                execute-condition: "getHeader('X-api-key').startsWith('PX001-')"
+                bandwidths:
+                    - capacity: 100
+                      time: 1
+                      unit: hours
+              - expression: "getHeader('X-api-key')"
+                execute-condition: "getHeader('X-api-key').startsWith('BX001-')"
+                bandwidths:
+                    - capacity: 40
+                      time: 1
+                      unit: hours
+              - expression: "getHeader('X-api-key')"
+                bandwidths:
+                    - capacity: 20
+                      time: 1
+                      unit: hours
+
+springdoc:
+    api-docs:
+        path: /api-docs
+    swagger-ui:
+        operationsSorter: method
+        path: /swagger-ui-custom.html
+    version: 2.0.0
