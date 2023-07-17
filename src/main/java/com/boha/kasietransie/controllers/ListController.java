@@ -130,11 +130,10 @@ public class ListController {
     }
 
     @GetMapping("/getAssociationVehicles")
-    public ResponseEntity<Object> getAssociationVehicles(@RequestParam String associationId) {
+    public ResponseEntity<Object> getAssociationVehicles(@RequestParam String associationId, @RequestParam int page) {
         try {
             List<Vehicle> ass = vehicleService
-                    .getAssociationVehicles(associationId);
-            logger.info(E.LEAF+ " getAssociationVehicles found: " + ass.size());
+                    .getAssociationVehicles(associationId, page);
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
@@ -218,10 +217,10 @@ public class ListController {
     }
 
     @GetMapping("/getRoutePoints")
-    public ResponseEntity<Object> getRoutePoints(@RequestParam String routeId) {
+    public ResponseEntity<Object> getRoutePoints(@RequestParam String routeId, @RequestParam int page) {
         try {
             List<RoutePoint> ass = routeService
-                    .getRoutePoints(routeId);
+                    .getRoutePoints(routeId, page);
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(

@@ -36,6 +36,9 @@ public class RoutePoint {
                 db.getCollection(RoutePoint.class.getSimpleName());
 
         dbCollection.createIndex(
+                Indexes.ascending("associationId"));
+
+        dbCollection.createIndex(
                 Indexes.ascending("routeId"));
 
         dbCollection.createIndex(

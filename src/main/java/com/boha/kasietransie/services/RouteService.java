@@ -9,19 +9,26 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mongodb.WriteConcern;
 import com.mongodb.bulk.BulkWriteResult;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.geo.Distance;
 import org.springframework.data.geo.GeoResult;
 import org.springframework.data.geo.GeoResults;
 import org.springframework.data.geo.Metrics;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.NearQuery;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -79,6 +86,7 @@ public class RouteService {
         List<Route> list = routeRepository.findByRouteId(routeId);
         if (!list.isEmpty()) {
             Route route = list.get(0);
+
             List<RouteLandmark> routeLandmarks = routeLandmarkRepository.findByRouteId(routeId);
             List<RoutePoint> routePoints = routePointRepository.findByRouteId(routeId);
             List<RouteCity> routeCities = routeCityRepository.findByRouteId(routeId);
@@ -198,12 +206,32 @@ public class RouteService {
     public List<Route> getAssociationRoutes(String associationId) {
         return routeRepository.findByAssociationId(associationId);
     }
-//    public List<RouteUpdateRequest> getRouteUpdateRequests(String routeId) {
-//        return routeUpdateRequestRepository.findByRouteId(routeId);
-//    }
 
-    public List<RoutePoint> getRoutePoints(String routeId) {
-        return routePointRepository.findByRouteId(routeId);
+
+    public List<RoutePoint> getRoutePoints(String routeId, int page) {
+        Instant start = Instant.now();
+        PageRequest request = PageRequest.of(page,300, Sort.by("created"));
+
+        Page<RoutePoint> routePointPage = routePointRepository.findByRouteId(routeId, request);
+        int pages = routePointPage.getTotalPages();
+        logger.info(E.RED_DOT + "number of pages: " + pages);
+        if (pages == 0) {
+            return new ArrayList<>();
+        }
+        if (page > pages) {
+            return new ArrayList<>();
+        }
+        Iterator<RoutePoint> ite = routePointPage.iterator();
+        List<RoutePoint> points = new ArrayList<>();
+        while (ite.hasNext()) {
+            RoutePoint p = ite.next();
+            points.add(p);
+        }
+        //
+        logger.info(E.RED_DOT + "number of points: " + points.size() + " page: " + page + " of size: 300");
+        logger.info(E.LEAF+E.LEAF+" RoutePoints delivered. elapsed time: "
+                + Duration.between(start, Instant.now()).toSeconds() + " seconds");
+        return points;
     }
 
     public List<RouteCity> getRouteCities(String routeId) {
@@ -242,16 +270,6 @@ public class RouteService {
         return points;
     }
 
-    public int fixRoutePoints(String associationId) {
-        List<RoutePoint> points = routePointRepository.findAll();
-
-        for (RoutePoint point : points) {
-            point.setAssociationId(associationId);
-        }
-        routePointRepository.saveAll(points);
-        logger.info(E.LEAF + E.LEAF + " " + points.size() + " Route points fixed");
-        return points.size();
-    }
 
     public List<RouteLandmark> findRouteLandmarksByLocation(String associationId,
                                                             double latitude,

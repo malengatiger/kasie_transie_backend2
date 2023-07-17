@@ -1,8 +1,6 @@
 package com.boha.kasietransie.services;
 
-import com.boha.kasietransie.data.dto.Association;
-import com.boha.kasietransie.data.dto.User;
-import com.boha.kasietransie.data.dto.Vehicle;
+import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.data.repos.AssociationRepository;
 import com.boha.kasietransie.data.repos.UserRepository;
 import com.boha.kasietransie.data.repos.VehicleHeartbeatRepository;
@@ -21,6 +19,9 @@ import com.google.zxing.qrcode.QRCodeWriter;
 import org.joda.time.DateTime;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -32,6 +33,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -81,8 +84,32 @@ public class VehicleService {
         return v;
     }
 
-    public List<Vehicle> getAssociationVehicles(String associationId) {
-        return vehicleRepository.findByAssociationId(associationId);
+    public List<Vehicle> getAssociationVehicles(String associationId, int page) {
+
+        Instant start = Instant.now();
+        PageRequest request = PageRequest.of(page,300, Sort.by("vehicleReg"));
+
+        Page<Vehicle> vehiclePage = vehicleRepository.findByAssociationId(associationId, request);
+        int pages = vehiclePage.getTotalPages();
+        logger.info(E.RED_DOT + "number of pages: " + pages);
+        if (pages == 0) {
+            return new ArrayList<>();
+        }
+        if (page > pages) {
+            return new ArrayList<>();
+        }
+        Iterator<Vehicle> ite = vehiclePage.iterator();
+        List<Vehicle> points = new ArrayList<>();
+        while (ite.hasNext()) {
+            Vehicle p = ite.next();
+            points.add(p);
+        }
+        //
+        logger.info(E.RED_DOT + "number of cars: " + points.size() + " page: " + page + " of size: 300");
+        logger.info(E.LEAF+E.LEAF+" Cars delivered. elapsed time: "
+                + Duration.between(start, Instant.now()).toSeconds() + " seconds");
+        return points;
+
     }
 
     public List<Vehicle> getOwnerVehicles(String userId) {

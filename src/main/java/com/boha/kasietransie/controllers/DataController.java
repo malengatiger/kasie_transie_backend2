@@ -846,19 +846,6 @@ public class DataController {
 
     }
 
-    @GetMapping("/fixRoutePoints")
-    public ResponseEntity<Object> fixRoutePoints(@RequestParam String associationId) {
-
-        try {
-            return ResponseEntity.ok(routeService.fixRoutePoints(associationId));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
-                            "fixRoutePoints failed: " + e.getMessage(),
-                            new DateTime().toDateTimeISO().toString()));
-        }
-
-    }
 
     @GetMapping("/recreateAllQRCodes")
     public ResponseEntity<Object> recreateAllQRCodes(@RequestParam String associationId) {
