@@ -47,6 +47,18 @@ public class ListController {
     private final MediaService mediaService;
     final AmbassadorService ambassadorService;
 
+    @GetMapping("/getRoutePointAggregate")
+    public ResponseEntity<Object> getRoutePointAggregate() {
+        try {
+            List<Object> objects = routeService.getRoutePointAggregate();
+            return ResponseEntity.ok(objects);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "getRoutePointAggregate failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+    }
     @GetMapping("/getUserById")
     public ResponseEntity<Object> getUserById(@RequestParam String userId) {
         try {
@@ -64,6 +76,10 @@ public class ListController {
     public ResponseEntity<Object> getUserByEmail(@RequestParam String email) {
         try {
             User user = userService.getUserByEmail(email);
+            if (user == null) {
+                throw new Exception("We are not winning! User is null, Chief!");
+            }
+            logger.info(E.LEAF+" user found? " + user.getName());
             return ResponseEntity.ok(user);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
@@ -478,10 +494,10 @@ public class ListController {
         }
     }
     @GetMapping("/getOwnerVehicles")
-    public ResponseEntity<Object> getOwnerVehicles(@RequestParam String userId) {
+    public ResponseEntity<Object> getOwnerVehicles(@RequestParam String userId, @RequestParam int page) {
         try {
             List<Vehicle> ass = vehicleService
-                    .getOwnerVehicles(userId);
+                    .getOwnerVehicles(userId, page);
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
@@ -739,9 +755,9 @@ public class ListController {
     }
 
     @GetMapping("/getCountryCities")
-    public ResponseEntity<Object> getCountryCities(@RequestParam String countryId) {
+    public ResponseEntity<Object> getCountryCities(@RequestParam String countryId, int page) {
         try {
-            List<City> cities = cityService.getCountryCities(countryId);
+            List<City> cities = cityService.getCountryCities(countryId, page);
             return ResponseEntity.ok(cities);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(

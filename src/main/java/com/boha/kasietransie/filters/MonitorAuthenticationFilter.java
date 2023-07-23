@@ -53,52 +53,8 @@ public class MonitorAuthenticationFilter extends OncePerRequestFilter {
             doFilter(httpServletRequest, httpServletResponse, filterChain);
             return;
         }
-
-        if (url.contains("uploadFile")) {   //this is my local machine
-            LOGGER.info(E.ANGRY + E.ANGRY + "this request is not subject to authentication: "
-                    + E.HAND2 + url);
-            doFilter(httpServletRequest, httpServletResponse, filterChain);
-            return;
-        }
-        //allow getCountries
-        if (httpServletRequest.getRequestURI().contains("getCountries")
-                || httpServletRequest.getRequestURI().contains("addCountry")) {
-            LOGGER.info(mm + " contextPath: " + httpServletRequest.getContextPath()
-                    + E.AMP + " requestURI: " + httpServletRequest.getRequestURI());
-            LOGGER.info(mm + " allowing addCountry and getCountries without authentication, is this OK?");
-
-            doFilter(httpServletRequest, httpServletResponse, filterChain);
-            return;
-        }
-        //allow registerAssociation, downloadExampleUsersFile, downloadExampleVehiclesFile
-        if (httpServletRequest.getRequestURI().contains("downloadExampleUsersFile")
-                || httpServletRequest.getRequestURI().contains("registerAssociation")
-                || httpServletRequest.getRequestURI().contains("downloadExampleVehiclesFile")) {
-            LOGGER.info(mm + " contextPath: " + httpServletRequest.getContextPath()
-                    + E.AMP + " requestURI: " + httpServletRequest.getRequestURI());
-            LOGGER.info(mm + " allowing downloadExampleVehiclesFile and downloadExampleUsersFile without authentication, is this OK?");
-
-            doFilter(httpServletRequest, httpServletResponse, filterChain);
-            return;
-        }
-        //allow api-docs
-        if (httpServletRequest.getRequestURI().contains("api-docs")) {
-            LOGGER.info(mm + " contextPath: " + httpServletRequest.getContextPath()
-                    + E.AMP + " requestURI: " + httpServletRequest.getRequestURI() + "\n\n");
-            LOGGER.info(mm + " allowing swagger openapi call");
-
-            doFilter(httpServletRequest, httpServletResponse, filterChain);
-            return;
-        }
-        //allow localhost
-        if (url.contains("localhost") || url.contains("192.168.86.242")) {
-            LOGGER.info(mm + " contextPath: " + httpServletRequest.getContextPath()
-                    + E.AMP + " requestURI: " + httpServletRequest.getRequestURI() + "\n\n");
-            LOGGER.info(mm + " allowing call from " + url);
-
-            doFilter(httpServletRequest, httpServletResponse, filterChain);
-            return;
-        }
+        //todp - remove
+        if (exclude(httpServletRequest, httpServletResponse, filterChain, url)) return;
 
         String m = httpServletRequest.getHeader("Authorization");
         if (m == null) {
@@ -131,6 +87,62 @@ public class MonitorAuthenticationFilter extends OncePerRequestFilter {
             sendError(httpServletResponse, e.getMessage());
         }
 
+    }
+
+    private boolean exclude(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, FilterChain filterChain, String url) throws IOException, ServletException {
+        if (url.contains("kasietransie")) {   //this is my local machine
+            LOGGER.info(E.ANGRY + E.ANGRY + "kasietransie this request is not subject to authentication: "
+                    + E.HAND2 + url);
+            doFilter(httpServletRequest, httpServletResponse, filterChain);
+            return true;
+        }
+        if (url.contains("uploadFile")) {   //this is my local machine
+            LOGGER.info(E.ANGRY + E.ANGRY + "this request is not subject to authentication: "
+                    + E.HAND2 + url);
+            doFilter(httpServletRequest, httpServletResponse, filterChain);
+            return true;
+        }
+        //allow getCountries
+        if (httpServletRequest.getRequestURI().contains("getCountries")
+                || httpServletRequest.getRequestURI().contains("addCountry")) {
+            LOGGER.info(mm + " contextPath: " + httpServletRequest.getContextPath()
+                    + E.AMP + " requestURI: " + httpServletRequest.getRequestURI());
+            LOGGER.info(mm + " allowing addCountry and getCountries without authentication, is this OK?");
+
+            doFilter(httpServletRequest, httpServletResponse, filterChain);
+            return true;
+        }
+        //allow registerAssociation, downloadExampleUsersFile, downloadExampleVehiclesFile
+        if (httpServletRequest.getRequestURI().contains("downloadExampleUsersFile")
+                || httpServletRequest.getRequestURI().contains("registerAssociation")
+                || httpServletRequest.getRequestURI().contains("downloadExampleVehiclesFile")) {
+            LOGGER.info(mm + " contextPath: " + httpServletRequest.getContextPath()
+                    + E.AMP + " requestURI: " + httpServletRequest.getRequestURI());
+            LOGGER.info(mm + " allowing downloadExampleVehiclesFile and downloadExampleUsersFile without authentication, is this OK?");
+
+            doFilter(httpServletRequest, httpServletResponse, filterChain);
+            return true;
+        }
+        //allow api-docs
+        if (httpServletRequest.getRequestURI().contains("api-docs")) {
+            LOGGER.info(mm + " contextPath: " + httpServletRequest.getContextPath()
+                    + E.AMP + " requestURI: " + httpServletRequest.getRequestURI() + "\n\n");
+            LOGGER.info(mm + " allowing swagger openapi call");
+
+            doFilter(httpServletRequest, httpServletResponse, filterChain);
+            return true;
+        }
+        //allow localhost
+        if (url.contains("localhost") || url.contains("192.168.86.242")) {
+            LOGGER.info(mm + " contextPath: " + httpServletRequest.getContextPath()
+                    + E.AMP + " requestURI: " + httpServletRequest.getRequestURI() + "\n\n");
+            LOGGER.info(mm + " allowing call from " + url);
+
+            doFilter(httpServletRequest, httpServletResponse, filterChain);
+            return true;
+        }
+
+        return false;
     }
 
     private static void sendError(HttpServletResponse httpServletResponse, String message) throws IOException {

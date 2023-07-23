@@ -23,10 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 
 @Service
@@ -55,9 +52,7 @@ public class TextTranslationService {
 
     public String translateText(TranslationBag bag) throws Exception {
 
-        if (translationServiceClient == null) {
-            initialize();
-        }
+        initialize();
 
         LocationName parent = LocationName.of(projectId, "global");
 
@@ -96,8 +91,8 @@ public class TextTranslationService {
         for (String languageCode : languageCodes) {
             List<TranslationBag> translationBags = new ArrayList<>();
 
-            for (String key : hashMap.keySet()) {
-                TranslationBag bag = getBag(languageCode, hashMap.get(key), key);
+            for (Map.Entry<String, String> entry : hashMap.entrySet()) {
+                TranslationBag bag = getBag(languageCode, entry.getValue(), entry.getKey());
                 translationBags.add(bag);
             }
 
@@ -128,7 +123,12 @@ public class TextTranslationService {
 
         LOGGER.info(E.PINK + E.PINK + E.PINK + " Number of TranslationBags: " + bags.size() +
                 " elapsed time: " + delta + " seconds");
-        translationServiceClient.close();
+        try {
+            translationServiceClient.shutdownNow();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
 
         return E.LEAF+"Translated " + allBags.size()
                 + " strings and saved them to mongo\n\n" + dart;

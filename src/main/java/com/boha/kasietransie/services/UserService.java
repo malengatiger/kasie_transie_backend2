@@ -4,6 +4,7 @@ import com.boha.kasietransie.data.dto.Association;
 import com.boha.kasietransie.data.dto.User;
 import com.boha.kasietransie.data.repos.AssociationRepository;
 import com.boha.kasietransie.data.repos.UserRepository;
+import com.boha.kasietransie.util.E;
 import com.boha.kasietransie.util.FileToUsers;
 import com.google.api.core.ApiFuture;
 import com.google.firebase.auth.FirebaseAuth;
@@ -178,11 +179,18 @@ public class UserService {
     }
 
     public User getUserByEmail(String email) {
-        List<User> list = userRepository.findByEmail(email);
-        if (list.isEmpty()) {
-            throw new NoSuchElementException();
+        try {
+            List<User> list = userRepository.findByEmail(email);
+            logger.info(E.RAIN+E.RAIN+" getUserByEmail found " + list.size()+ " users");
+            if (list.isEmpty()) {
+                logger.severe(E.RED_DOT+"User not found by email");
+                throw new NoSuchElementException();
+            }
+            return list.get(0);
+        } catch (NoSuchElementException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-        return list.get(0);
     }
 
 

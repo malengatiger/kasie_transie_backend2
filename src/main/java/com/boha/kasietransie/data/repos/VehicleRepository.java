@@ -10,9 +10,12 @@ import java.util.List;
 
 public interface VehicleRepository extends MongoRepository<Vehicle, String> {
     List<Vehicle> findByAssociationId(String associationId);
+
     List<Vehicle> findByOwnerId(String userId);
 
     Page<Vehicle> findByAssociationId(String associationId, Pageable pageable);
+
+    Page<Vehicle> findByOwnerId(String userId, Pageable pageable);
 
 
 }

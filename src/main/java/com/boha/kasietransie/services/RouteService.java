@@ -9,16 +9,20 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mongodb.WriteConcern;
 import com.mongodb.bulk.BulkWriteResult;
+import com.mongodb.client.ClientSession;
+import com.mongodb.client.result.DeleteResult;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.geo.Distance;
 import org.springframework.data.geo.GeoResult;
 import org.springframework.data.geo.GeoResults;
 import org.springframework.data.geo.Metrics;
 import org.springframework.data.mongodb.core.BulkOperations;
+import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.NearQuery;
 import org.springframework.data.mongodb.core.query.Query;
@@ -31,6 +35,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
+
+import static com.mongodb.client.model.Aggregates.match;
+import static org.springframework.data.mongodb.core.aggregation.Aggregation.*;
 
 @Service
 public class RouteService {
@@ -47,6 +54,7 @@ public class RouteService {
     final RouteUpdateRequestRepository routeUpdateRequestRepository;
     final MessagingService messagingService;
     final MongoTemplate mongoTemplate;
+    final MongoOperations mongoOperations;
 
     public RouteService(RouteRepository routeRepository,
                         RoutePointRepository routePointRepository,
@@ -57,7 +65,7 @@ public class RouteService {
                         VehicleMediaRequestRepository vehicleMediaRequestRepository,
                         RouteUpdateRequestRepository routeUpdateRequestRepository,
                         MessagingService messagingService,
-                        MongoTemplate mongoTemplate) {
+                        MongoTemplate mongoTemplate, MongoOperations mongoOperations) {
         this.routeRepository = routeRepository;
         this.routePointRepository = routePointRepository;
         this.routeLandmarkRepository = routeLandmarkRepository;
@@ -68,6 +76,7 @@ public class RouteService {
         this.routeUpdateRequestRepository = routeUpdateRequestRepository;
         this.messagingService = messagingService;
         this.mongoTemplate = mongoTemplate;
+        this.mongoOperations = mongoOperations;
     }
 
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -147,6 +156,19 @@ public class RouteService {
         return inserted;
     }
 
+    public List<RoutePoint> deleteRoutePointsFromIndex(String routeId, int index) {
+        Criteria c = Criteria.where("routeId").is(routeId)
+                .and("index").gte(index);
+
+        org.springframework.data.mongodb.core.query.Query query = new Query(c);
+        DeleteResult res = mongoTemplate.remove(query, RoutePoint.class);
+        logger.info(E.BUTTERFLY+" delete result: " + res.getDeletedCount());
+
+        List<RoutePoint> list = routePointRepository.findByRouteId(routeId);
+        logger.info(E.BUTTERFLY + " return points left after delete: " + list.size());
+        return list;
+    }
+
     public List<CalculatedDistance> addCalculatedDistances(CalculatedDistanceList list) {
 
         List<CalculatedDistance> calculatedDistances = list.getCalculatedDistances();
@@ -189,6 +211,7 @@ public class RouteService {
         messagingService.sendVehicleMediaRequestMessage(vehicleMediaRequest);
         return vehicleMediaRequestRepository.insert(vehicleMediaRequest);
     }
+
     public RouteUpdateRequest addRouteUpdateRequest(RouteUpdateRequest routeUpdateRequest) throws Exception {
         messagingService.sendRouteUpdateMessage(routeUpdateRequest);
         return routeUpdateRequestRepository.insert(routeUpdateRequest);
@@ -207,7 +230,23 @@ public class RouteService {
         return routeRepository.findByAssociationId(associationId);
     }
 
+    public List<Object> getRoutePointAggregate() {
 
+        Aggregation agg = newAggregation(
+                group("routeId","name").count().as("count"),
+                project("count", "routeId").and("count").previousOperation()
+        );
+
+        AggregationResults<Object> groupResults
+                = mongoTemplate.aggregate(agg, RoutePoint.class, Object.class);
+        List<Object> result = groupResults.getMappedResults();
+        logger.info(E.BELL+"results: " + result.size());
+        for (Object obj : groupResults.getMappedResults()) {
+            String m = gson.toJson(obj);
+            logger.info(E.BELL+ " " + m);
+        }
+        return result;
+    }
     public List<RoutePoint> getRoutePoints(String routeId, int page) {
         Instant start = Instant.now();
         PageRequest request = PageRequest.of(page,300, Sort.by("created"));

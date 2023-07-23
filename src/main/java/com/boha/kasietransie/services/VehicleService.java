@@ -84,6 +84,13 @@ public class VehicleService {
         return v;
     }
 
+    public Vehicle updateVehicle(Vehicle vehicle) {
+        Vehicle v = vehicleRepository.save(vehicle);
+        logger.info("Vehicle has been updated on database");
+        messagingService.sendVehicleUpdateMessage(v.getAssociationId(), v.getVehicleId());
+        return v;
+    }
+
     public List<Vehicle> getAssociationVehicles(String associationId, int page) {
 
         Instant start = Instant.now();
@@ -99,21 +106,45 @@ public class VehicleService {
             return new ArrayList<>();
         }
         Iterator<Vehicle> ite = vehiclePage.iterator();
-        List<Vehicle> points = new ArrayList<>();
+        List<Vehicle> vehicles = new ArrayList<>();
         while (ite.hasNext()) {
             Vehicle p = ite.next();
-            points.add(p);
+            vehicles.add(p);
         }
         //
-        logger.info(E.RED_DOT + "number of cars: " + points.size() + " page: " + page + " of size: 300");
+        logger.info(E.RED_DOT + "number of cars: " + vehicles.size() + " page: " + page + " of size: 300");
         logger.info(E.LEAF+E.LEAF+" Cars delivered. elapsed time: "
                 + Duration.between(start, Instant.now()).toSeconds() + " seconds");
-        return points;
+        return vehicles;
 
     }
 
-    public List<Vehicle> getOwnerVehicles(String userId) {
-        return vehicleRepository.findByOwnerId(userId);
+    public List<Vehicle> getOwnerVehicles(String userId, int page) {
+
+        Instant start = Instant.now();
+        PageRequest request = PageRequest.of(page,200, Sort.by("userId"));
+
+        Page<Vehicle> vehiclePage = vehicleRepository.findByOwnerId(userId, request);
+        int pages = vehiclePage.getTotalPages();
+        logger.info(E.RED_DOT + "number of pages: " + pages);
+        if (pages == 0) {
+            return new ArrayList<>();
+        }
+        if (page > pages) {
+            return new ArrayList<>();
+        }
+        Iterator<Vehicle> ite = vehiclePage.iterator();
+        List<Vehicle> vehicles = new ArrayList<>();
+        while (ite.hasNext()) {
+            Vehicle p = ite.next();
+            vehicles.add(p);
+        }
+        //
+        logger.info(E.RED_DOT + "number of cars: " + vehicles.size() + " page: " + page + " of size: 300");
+        logger.info(E.LEAF+E.LEAF+" Cars delivered. elapsed time: "
+                + Duration.between(start, Instant.now()).toSeconds() + " seconds");
+
+        return vehicles;
     }
 
     public int updateVehicleQRCode(Vehicle vehicle) throws Exception {

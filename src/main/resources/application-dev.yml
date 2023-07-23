@@ -1,7 +1,7 @@
 bucketName: aubsbucket01
 firstNames: firstNames.json
 mongoSecretsName: mongo
-mongoSecretsVersion: 1
+mongoSecretsVersion: 3
 realmSecretsName: realm
 realmSecretsVersion: 2
 doIndex: 1

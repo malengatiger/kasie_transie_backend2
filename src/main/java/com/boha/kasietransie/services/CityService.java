@@ -2,6 +2,7 @@ package com.boha.kasietransie.services;
 
 import com.boha.kasietransie.data.dto.City;
 import com.boha.kasietransie.data.dto.Country;
+import com.boha.kasietransie.data.dto.RoutePoint;
 import com.boha.kasietransie.data.dto.State;
 import com.boha.kasietransie.data.repos.CityRepository;
 import com.boha.kasietransie.data.repos.CountryRepository;
@@ -18,6 +19,9 @@ import com.mongodb.client.model.geojson.Position;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.geo.Distance;
 import org.springframework.data.geo.GeoResult;
 import org.springframework.data.geo.GeoResults;
@@ -25,8 +29,11 @@ import org.springframework.data.geo.Metrics;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -65,9 +72,34 @@ public class CityService {
     public City addCity(City city) {
         return cityRepository.insert(city);
     }
-    public List<City> getCountryCities(String countryId) {
-        return cityRepository.findByCountryId(countryId);
+
+    public List<City> getCountryCities(String countryId, int page) {
+        Instant start = Instant.now();
+
+        PageRequest request = PageRequest.of(page,1000, Sort.by("name"));
+
+        Page<City> routePointPage = cityRepository.findByCountryId(countryId, request);
+        int pages = routePointPage.getTotalPages();
+        logger.info(E.RED_DOT + "number of pages: " + pages);
+        if (pages == 0) {
+            return new ArrayList<>();
+        }
+        if (page > pages) {
+            return new ArrayList<>();
+        }
+        Iterator<City> ite = routePointPage.iterator();
+        List<City> cities = new ArrayList<>();
+        while (ite.hasNext()) {
+            City p = ite.next();
+            cities.add(p);
+        }
+        //
+        logger.info(E.RED_DOT + "number of cities: " + cities.size() + " page: " + page + " of size: 300");
+        logger.info(E.LEAF+E.LEAF+" cities delivered. elapsed time: "
+                + Duration.between(start, Instant.now()).toSeconds() + " seconds");
+        return cities;
     }
+
     public List<Country> getCountries() {
         return countryRepository.findAll();
     }

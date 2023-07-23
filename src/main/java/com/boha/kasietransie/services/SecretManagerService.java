@@ -93,15 +93,18 @@ public class SecretManagerService {
         // the "close" method on the client to safely clean up any remaining background resources.
         LOGGER.info(E.RED_APPLE+E.RED_APPLE+E.RED_APPLE+E.RED_APPLE
                 +" SecretMgr: getMongoString: projectId: " + projectId);
-//        String m =  this.secretManagerTemplate.getSecretString(
-//                "sm://"+mongoSecretsName+"/"+mongoSecretsVersion);
-
         String m =  this.secretManagerTemplate.getSecretString(
-                "sm://"+realmSecretsName+"/"+realmSecretsVersion);
+                "sm://"+mongoSecretsName+"/"+mongoSecretsVersion);
+
+//        String m =  this.secretManagerTemplate.getSecretString(
+//                "sm://"+realmSecretsName+"/"+realmSecretsVersion);
         assert m != null;
         String mongoString = m.trim();
 
         LOGGER.info(E.RED_APPLE+E.RED_APPLE+E.RED_APPLE+E.RED_APPLE + mongoString);
+        LOGGER.info(E.RED_APPLE+E.RED_APPLE+E.RED_APPLE+E.RED_APPLE + " mongoSecretsName: " +  mongoSecretsName
+        + " mongoSecretsVersion: " + mongoSecretsVersion);
+
         return mongoString;
     }
 

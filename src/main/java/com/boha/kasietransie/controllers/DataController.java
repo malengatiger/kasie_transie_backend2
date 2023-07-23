@@ -97,6 +97,23 @@ public class DataController {
 
     }
 
+    @GetMapping("/deleteRoutePointsFromIndex")
+    public ResponseEntity<Object> deleteRoutePointsFromIndex(
+            @RequestParam String routeId, @RequestParam int index) {
+
+        try {
+            List<RoutePoint> v = routeService.deleteRoutePointsFromIndex(routeId,index);
+            return ResponseEntity.ok(v);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "deleteRoutePointsFromIndex failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+
+    }
+
     @PostMapping("/addVehicle")
     public ResponseEntity<Object> addVehicle(@RequestBody Vehicle vehicle) {
 
@@ -107,6 +124,20 @@ public class DataController {
             return ResponseEntity.badRequest().body(
                     new CustomErrorResponse(400,
                             "addVehicle failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+
+    }
+    @PostMapping("/updateVehicle")
+    public ResponseEntity<Object> updateVehicle(@RequestBody Vehicle vehicle) {
+
+        try {
+            Vehicle v = vehicleService.updateVehicle(vehicle);
+            return ResponseEntity.ok(v);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "updateVehicle failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
 

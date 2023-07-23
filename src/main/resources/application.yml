@@ -1,6 +1,6 @@
 application:
     title: KasieTransie Backend
-    version: Geo Version 1.0.0
+    version: Kasie Version 1.0.0
 cloudStorageDirectory: kasieMedia
 email: bryangrant217x@gmail.com
 requestsPerSecond: 10
