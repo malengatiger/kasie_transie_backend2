@@ -32,6 +32,7 @@ public class Route {
     String activationDate;
     String associationId;
     String associationName;
+    String qrCodeUrl;
     RouteStartEnd routeStartEnd;
     List<CalculatedDistance> calculatedDistances;
     double heading;

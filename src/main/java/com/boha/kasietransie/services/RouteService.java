@@ -7,9 +7,13 @@ import com.boha.kasietransie.data.repos.*;
 import com.boha.kasietransie.util.E;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 import com.mongodb.WriteConcern;
 import com.mongodb.bulk.BulkWriteResult;
-import com.mongodb.client.ClientSession;
 import com.mongodb.client.result.DeleteResult;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +32,12 @@ import org.springframework.data.mongodb.core.query.NearQuery;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -36,7 +46,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static com.mongodb.client.model.Aggregates.match;
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.*;
 
 @Service
@@ -55,6 +64,7 @@ public class RouteService {
     final MessagingService messagingService;
     final MongoTemplate mongoTemplate;
     final MongoOperations mongoOperations;
+    final CloudStorageUploaderService cloudStorageUploaderService;
 
     public RouteService(RouteRepository routeRepository,
                         RoutePointRepository routePointRepository,
@@ -65,7 +75,7 @@ public class RouteService {
                         VehicleMediaRequestRepository vehicleMediaRequestRepository,
                         RouteUpdateRequestRepository routeUpdateRequestRepository,
                         MessagingService messagingService,
-                        MongoTemplate mongoTemplate, MongoOperations mongoOperations) {
+                        MongoTemplate mongoTemplate, MongoOperations mongoOperations, CloudStorageUploaderService cloudStorageUploaderService) {
         this.routeRepository = routeRepository;
         this.routePointRepository = routePointRepository;
         this.routeLandmarkRepository = routeLandmarkRepository;
@@ -77,13 +87,47 @@ public class RouteService {
         this.messagingService = messagingService;
         this.mongoTemplate = mongoTemplate;
         this.mongoOperations = mongoOperations;
+        this.cloudStorageUploaderService = cloudStorageUploaderService;
     }
 
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private static final Logger logger = Logger.getLogger(RouteService.class.getSimpleName());
     private static final String XX = E.PRESCRIPTION + E.PRESCRIPTION + E.PRESCRIPTION;
 
-    public Route addRoute(Route route) {
+    public void createRouteQRCode(Route route) throws Exception {
+        try {
+            String barcodeText = gson.toJson(route);
+            QRCodeWriter barcodeWriter = new QRCodeWriter();
+            BitMatrix bitMatrix =
+                    barcodeWriter.encode(barcodeText, BarcodeFormat.QR_CODE, 800, 800);
+
+            BufferedImage img = MatrixToImageWriter.toBufferedImage(bitMatrix);
+
+            String id = route.getRouteId().replace(" ", "");
+
+            Path path = Path.of("qrcodes/qrcode_" + id
+                    + "_" + System.currentTimeMillis() + ".png");
+
+            String p = "qrcodes/qrcode_" + id
+                    + "_" + System.currentTimeMillis() + ".png";
+            File file = new File(p);
+            ImageIO.write(img, "png", file);
+            logger.info(E.COFFEE + "File created and qrCode ready for uploading");
+            String url = cloudStorageUploaderService.uploadFile(file.getName(), file);
+            route.setQrCodeUrl(url);
+
+            boolean delete = Files.deleteIfExists(path);
+            logger.info(E.LEAF + E.LEAF + E.LEAF +
+                    " QRCode generated, url: " + url + " for route: " + gson.toJson(route)
+                    + E.RED_APPLE + " - temp file deleted: " + delete);
+        } catch (WriterException | IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Route addRoute(Route route) throws Exception {
+        createRouteQRCode(route);
         return routeRepository.insert(route);
     }
 

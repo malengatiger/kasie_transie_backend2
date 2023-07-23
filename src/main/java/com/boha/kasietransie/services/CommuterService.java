@@ -36,14 +36,16 @@ public class CommuterService {
     final CommuterResponseRepository commuterResponseRepository;
     final CloudStorageUploaderService cloudStorageUploaderService;
     private final MailService mailService;
+    final MessagingService messagingService;
 
 
-    public CommuterService(CommuterRepository commuterRepository, CommuterRequestRepository commuterRequestRepository, CommuterResponseRepository commuterResponseRepository, CloudStorageUploaderService cloudStorageUploaderService, MailService mailService) {
+    public CommuterService(CommuterRepository commuterRepository, CommuterRequestRepository commuterRequestRepository, CommuterResponseRepository commuterResponseRepository, CloudStorageUploaderService cloudStorageUploaderService, MailService mailService, MessagingService messagingService) {
         this.commuterRepository = commuterRepository;
         this.commuterRequestRepository = commuterRequestRepository;
         this.commuterResponseRepository = commuterResponseRepository;
         this.cloudStorageUploaderService = cloudStorageUploaderService;
         this.mailService = mailService;
+        this.messagingService = messagingService;
     }
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private static final Logger logger = Logger.getLogger(CommuterService.class.getSimpleName());
@@ -140,7 +142,9 @@ public class CommuterService {
         return commuterRepository.insert(comm);
     }
     public CommuterRequest addCommuterRequest(CommuterRequest commuterRequest) {
-        return commuterRequestRepository.insert(commuterRequest);
+        CommuterRequest c = commuterRequestRepository.insert(commuterRequest);
+        messagingService.sendMessage(commuterRequest);
+        return c;
     }
     public CommuterResponse addCommuterResponse(CommuterResponse commuterResponse) {
         return commuterResponseRepository.insert(commuterResponse);
