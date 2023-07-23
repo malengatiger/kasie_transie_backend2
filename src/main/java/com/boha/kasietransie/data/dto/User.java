@@ -31,7 +31,9 @@ public class User {
     String password;
     String countryName;
     String dateRegistered;
-
+    String qrCodeUrl;
+    String profileUrl;
+    String profileThumbnail;
 
     private static final Logger logger = Logger.getLogger(User.class.getSimpleName());
     private static final String XX = E.COFFEE + E.COFFEE + E.COFFEE;

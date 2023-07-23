@@ -172,6 +172,28 @@ public class MessagingService {
             e.printStackTrace();
         }
     }
+
+    public void sendMessage(CommuterRequest commuterRequest) {
+        try {
+            String topic = "commuterRequest_" + commuterRequest.getRouteId();
+            Notification notification = Notification.builder()
+                    .setBody("A request has arrived from Commuter for Route: "
+                            + commuterRequest.getRouteName())
+                    .setTitle("Commuter Request")
+                    .build();
+
+            Message message = buildMessage("commuterRequest", topic,
+                    commuterRequest.getRouteId(), notification);
+
+            FirebaseMessaging.getInstance().send(message);
+            LOGGER.info(MM + "CommuterRequest message sent via FCM: " + G.toJson(commuterRequest));
+
+        } catch (Exception e) {
+            LOGGER.error("Failed to send commuterRequest FCM message");
+            e.printStackTrace();
+        }
+    }
+
     public void sendMessage(AmbassadorPassengerCount passengerCount) {
         try {
             String topic = "passengerCount_" + passengerCount.getAssociationId();

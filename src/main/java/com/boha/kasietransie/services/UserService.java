@@ -11,9 +11,19 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 import org.springframework.stereotype.Service;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -26,16 +36,50 @@ public class UserService {
     private final UserRepository userRepository;
     private final MailService mailService;
     private final AssociationRepository associationRepository;
+    final CloudStorageUploaderService cloudStorageUploaderService;
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private static final Logger logger = Logger.getLogger(UserService.class.getSimpleName());
     private static final String MM = "\uD83D\uDD35\uD83D\uDC26\uD83D\uDD35\uD83D\uDC26\uD83D\uDD35\uD83D\uDC26 ";
 
-    public UserService(UserRepository userRepository, MailService mailService, AssociationRepository associationRepository) {
+    public UserService(UserRepository userRepository, MailService mailService, AssociationRepository associationRepository, CloudStorageUploaderService cloudStorageUploaderService) {
         this.userRepository = userRepository;
         this.mailService = mailService;
         this.associationRepository = associationRepository;
+        this.cloudStorageUploaderService = cloudStorageUploaderService;
         logger.info(MM + " UserService constructed ");
 
+    }
+
+    public void createUserQRCode(User user) throws Exception {
+        try {
+            String barcodeText = gson.toJson(user);
+            QRCodeWriter barcodeWriter = new QRCodeWriter();
+            BitMatrix bitMatrix =
+                    barcodeWriter.encode(barcodeText, BarcodeFormat.QR_CODE, 800, 800);
+
+            BufferedImage img = MatrixToImageWriter.toBufferedImage(bitMatrix);
+
+            String reg = user.getUserId().replace(" ", "");
+
+            Path path = Path.of("qrcodes/qrcode_" + reg
+                    + "_" + System.currentTimeMillis() + ".png");
+
+            String p = "qrcodes/qrcode_" + reg
+                    + "_" + System.currentTimeMillis() + ".png";
+            File file = new File(p);
+            ImageIO.write(img, "png", file);
+            logger.info(E.COFFEE + "File created and qrCode ready for uploading");
+            String url = cloudStorageUploaderService.uploadFile(file.getName(), file);
+            user.setQrCodeUrl(url);
+
+            boolean delete = Files.deleteIfExists(path);
+            logger.info(E.LEAF + E.LEAF + E.LEAF +
+                    " QRCode generated, url: " + url + " for user: " + gson.toJson(user)
+                    + E.RED_APPLE + " - temp file deleted: " + delete);
+        } catch (WriterException | IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
     }
 
     public User updateUser(User user) throws Exception {
@@ -112,8 +156,10 @@ public class UserService {
             logger.info("\uD83E\uDDE1\uD83E\uDDE1 userRecord from Firebase : " + userRecord.getEmail());
             if (userRecord.getUid() != null) {
                 String uid = userRecord.getUid();
+                createUserQRCode(user);
                 user.setUserId(uid);
                 user.setPassword(null);
+
                 userRepository.insert(user);
                 //
                 user.setPassword(storedPassword);
