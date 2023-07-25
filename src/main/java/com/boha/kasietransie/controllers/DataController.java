@@ -50,6 +50,7 @@ public class DataController {
     final CloudStorageUploaderService cloudStorageUploaderService;
     final MediaService mediaService;
     final AmbassadorService ambassadorService;
+    final CommuterService commuterService;
 
     @PostMapping("/createUser")
     public ResponseEntity<Object> createUser(@RequestBody User user) {
@@ -124,6 +125,34 @@ public class DataController {
             return ResponseEntity.badRequest().body(
                     new CustomErrorResponse(400,
                             "addVehicle failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+
+    }
+    @PostMapping("/addCommuter")
+    public ResponseEntity<Object> addCommuter(@RequestBody Commuter commuter) {
+
+        try {
+            Commuter v = commuterService.addCommuter(commuter);
+            return ResponseEntity.ok(v);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "addCommuter failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+
+    }
+    @PostMapping("/addCommuterRequest")
+    public ResponseEntity<Object> addCommuterRequest(@RequestBody CommuterRequest request) {
+
+        try {
+            CommuterRequest v = commuterService.addCommuterRequest(request);
+            return ResponseEntity.ok(v);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "addCommuterRequest failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
 

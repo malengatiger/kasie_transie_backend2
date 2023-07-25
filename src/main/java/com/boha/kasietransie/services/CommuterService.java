@@ -47,6 +47,7 @@ public class CommuterService {
         this.mailService = mailService;
         this.messagingService = messagingService;
     }
+
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private static final Logger logger = Logger.getLogger(CommuterService.class.getSimpleName());
 
@@ -55,43 +56,53 @@ public class CommuterService {
         FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
         logger.info("\uD83E\uDDE1\uD83E\uDDE1 createRequest  .... ");
         String storedPassword = UUID.randomUUID().toString();
-
+        boolean validEmail = false;
         try {
             UserRecord.CreateRequest createRequest = new UserRecord.CreateRequest();
-            createRequest.setPhoneNumber(commuter.getCellphone());
+            if (commuter.getCellphone() != null) {
+                createRequest.setPhoneNumber(commuter.getCellphone());
+            }
             if (commuter.getName() != null) {
                 createRequest.setDisplayName(commuter.getName());
             }
             createRequest.setPassword(storedPassword);
             if (commuter.getEmail() == null) {
                 String name = commuter.getName();
-                String mName = name.replace(" ","").toLowerCase(Locale.getDefault());
-                String email = mName+System.currentTimeMillis()+"@kasietransie.com";
+                String mName = name.replace(" ", "").toLowerCase(Locale.getDefault());
+                String email = mName + System.currentTimeMillis() + "@kasietransie.com";
                 commuter.setEmail(email);
                 createRequest.setEmail(email);
                 logger.info("\uD83E\uDDE1\uD83E\uDDE1 createUserAsync  .... email: " + email);
 
             } else {
+                validEmail = true;
                 createRequest.setEmail(commuter.getEmail());
             }
 
             ApiFuture<UserRecord> userRecordFuture = firebaseAuth.createUserAsync(createRequest);
             UserRecord userRecord = userRecordFuture.get();
-            logger.info("\uD83E\uDDE1\uD83E\uDDE1 userRecord from Firebase : " + userRecord.getEmail());
+            logger.info("\uD83E\uDDE1\uD83E\uDDE1 userRecord from Firebase : "
+                    + userRecord.getEmail() + " uid: " + userRecord.getUid());
             if (userRecord.getUid() != null) {
                 String uid = userRecord.getUid();
-                createCommuterQRCode(commuter);
                 commuter.setCommuterId(uid);
+                createCommuterQRCode(commuter);
                 commuterRepository.insert(commuter);
+                logger.info(E.CROISSANT+E.CROISSANT+E.CROISSANT+
+                        E.CROISSANT+" commuter should be in database");
+                commuter.setPassword(storedPassword);
                 //
-                String message = "Dear " + commuter.getName() +
-                        "      ,\n\nYou have been registered with KasieTransie and the team is happy to send you the first time login password. '\n" +
-                        "      \nPlease login on the web with your email and the attached password but use your cellphone number to sign in on the phone.\n" +
-                        "      \n\nThank you for working with KasieTransie. \nWelcome aboard!!\nBest Regards,\nThe KasieTransie Team\ninfo@geomonitorapp.io\n\n";
+                if (validEmail) {
+                    String message = "Dear " + commuter.getName() +
+                            "      ,\n\nYou have been registered with KasieTransie and the team is happy to send you the first time login password. '\n" +
+                            "      \nPlease login on the web with your email and the attached password but use your cellphone number to sign in on the phone.\n" +
+                            "      \n\nThank you for working with KasieTransie. \nWelcome aboard!!\nBest Regards,\nThe KasieTransie Team\ninfo@geomonitorapp.io\n\n";
 
-                logger.info("\uD83E\uDDE1\uD83E\uDDE1 sending email  .... ");
-                mailService.sendHtmlEmail(commuter.getEmail(), message, "Welcome to KasieTransie");
-                logger.info("\uD83E\uDDE1\uD83E\uDDE1 KasieTransie commuter created. ");
+                    logger.info("\uD83E\uDDE1\uD83E\uDDE1 sending email  .... ");
+                    mailService.sendHtmlEmail(commuter.getEmail(), message, "Welcome to KasieTransie");
+                }
+                logger.info("\uD83E\uDDE1\uD83E\uDDE1 KasieTransie commuter created. "
+                        + gson.toJson(commuter));
             } else {
                 throw new Exception("userRecord.getUid() == null. We have a problem with Firebase, Jack!");
             }
@@ -104,17 +115,25 @@ public class CommuterService {
         return commuter;
     }
 
-    public void createCommuterQRCode(Commuter user) throws Exception {
+    public void createCommuterQRCode(Commuter commuter) {
         try {
-            String barcodeText = gson.toJson(user);
+            String barcodeText = gson.toJson(commuter);
             QRCodeWriter barcodeWriter = new QRCodeWriter();
             BitMatrix bitMatrix =
                     barcodeWriter.encode(barcodeText, BarcodeFormat.QR_CODE, 800, 800);
 
             BufferedImage img = MatrixToImageWriter.toBufferedImage(bitMatrix);
 
-            String reg = user.getCommuterId().replace(" ", "");
+            String reg = commuter.getCommuterId().replace(" ", "");
 
+            File tmpDir = new File("qrcodes");
+            if (!tmpDir.isDirectory()) {
+                try {
+                    Files.createDirectory(tmpDir.toPath());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
             Path path = Path.of("qrcodes/qrcode_" + reg
                     + "_" + System.currentTimeMillis() + ".png");
 
@@ -124,11 +143,11 @@ public class CommuterService {
             ImageIO.write(img, "png", file);
             logger.info(E.COFFEE + "File created and qrCode ready for uploading");
             String url = cloudStorageUploaderService.uploadFile(file.getName(), file);
-            user.setQrCodeUrl(url);
+            commuter.setQrCodeUrl(url);
 
             boolean delete = Files.deleteIfExists(path);
             logger.info(E.LEAF + E.LEAF + E.LEAF +
-                    " QRCode generated, url: " + url + " for user: " + gson.toJson(user)
+                    " QRCode generated, url: " + url + " for commuter: "
                     + E.RED_APPLE + " - temp file deleted: " + delete);
         } catch (WriterException | IOException e) {
             e.printStackTrace();
@@ -139,13 +158,15 @@ public class CommuterService {
     public Commuter addCommuter(Commuter commuter) throws Exception {
         Commuter comm = createCommuter(commuter);
         createCommuterQRCode(comm);
-        return commuterRepository.insert(comm);
+        return comm;
     }
+
     public CommuterRequest addCommuterRequest(CommuterRequest commuterRequest) {
         CommuterRequest c = commuterRequestRepository.insert(commuterRequest);
         messagingService.sendMessage(commuterRequest);
         return c;
     }
+
     public CommuterResponse addCommuterResponse(CommuterResponse commuterResponse) {
         return commuterResponseRepository.insert(commuterResponse);
     }

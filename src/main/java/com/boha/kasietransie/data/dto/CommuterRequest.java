@@ -6,6 +6,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
 import lombok.Data;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.logging.Logger;
@@ -14,6 +15,10 @@ import java.util.logging.Logger;
 @Document(collation = "CommuterRequest")
 
 public class CommuterRequest {
+    private String _partitionKey;
+    @Id
+    private String _id;
+    String commuterRequestId;
     String commuterId;
     String dateRequested;
     String dateNeeded;
@@ -48,14 +53,14 @@ public class CommuterRequest {
                 db.getCollection(CommuterRequest.class.getSimpleName());
 
         dbCollection.createIndex(
-                Indexes.ascending("email"));
-        dbCollection.createIndex(
-                Indexes.ascending("cellphone"),
-                new IndexOptions().unique(true));
+                Indexes.ascending("commuterId"));
 
         dbCollection.createIndex(
-                Indexes.ascending("associationId", "lastName", "firstName"),
-                new IndexOptions().unique(true));
+                Indexes.ascending("routeId"));
+
+        dbCollection.createIndex(
+                Indexes.ascending("routeLandmarkId"));
+
 
         logger.info(XX + "CommuterRequest indexes done; result: ");
     }

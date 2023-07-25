@@ -159,7 +159,7 @@ public class MonitorAuthenticationFilter extends OncePerRequestFilter {
         if (httpServletResponse.getStatus() != 200) {
             LOGGER.info(reds + " \n" + httpServletRequest.getRequestURI() + " \uD83D\uDD37 Status Code: "
                     + httpServletResponse.getStatus() + "  \uD83D\uDCA6\uD83D\uDCA6  buffer size: " +
-                    httpServletResponse.getBufferSize());
+                    httpServletResponse.getOutputStream().toString());
         } else {
             LOGGER.info("\uD83D\uDD37\uD83D\uDD37\uD83D\uDD37\uD83D\uDD37"
                     + httpServletRequest.getRequestURI() + " \uD83D\uDD37 Status Code: "

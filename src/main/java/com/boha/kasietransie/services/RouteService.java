@@ -100,11 +100,9 @@ public class RouteService {
             QRCodeWriter barcodeWriter = new QRCodeWriter();
             BitMatrix bitMatrix =
                     barcodeWriter.encode(barcodeText, BarcodeFormat.QR_CODE, 800, 800);
-
             BufferedImage img = MatrixToImageWriter.toBufferedImage(bitMatrix);
 
             String id = route.getRouteId().replace(" ", "");
-
             Path path = Path.of("qrcodes/qrcode_" + id
                     + "_" + System.currentTimeMillis() + ".png");
 
@@ -354,7 +352,7 @@ public class RouteService {
     }
 
 
-    public List<RouteLandmark> findRouteLandmarksByLocation(String associationId,
+    public List<RouteLandmark> findAssociationRouteLandmarksByLocation(String associationId,
                                                             double latitude,
                                                             double longitude,
                                                             double radiusInKM) {
@@ -371,7 +369,7 @@ public class RouteService {
         GeoResults<RouteLandmark> geoResults = routeLandmarkRepository.findByPositionNear(point, distance);
 
         logger.info(E.COOL_MAN + E.COOL_MAN
-                + " findRouteLandmarksByLocation, points: " + geoResults.getContent().size());
+                + " findRouteLandmarksByLocation, landmarks: " + geoResults.getContent().size());
 
         List<RouteLandmark> routeLandmarks = new ArrayList<>();
 
@@ -398,6 +396,42 @@ public class RouteService {
         }
 
         return filteredList;
+    }
+    public List<RouteLandmark> findRouteLandmarksByLocation(
+                                                            double latitude,
+                                                            double longitude,
+                                                            double radiusInKM) {
+
+
+        logger.info(E.COOL_MAN + E.COOL_MAN
+                + " findRouteLandmarksByLocation: radius: " + radiusInKM);
+        logger.info(E.COOL_MAN + E.COOL_MAN
+                + " findRouteLandmarksByLocation: lat: " + latitude + " lng: " + longitude);
+        org.springframework.data.geo.Point point =
+                new org.springframework.data.geo.Point(longitude, latitude);
+
+        Distance distance = new Distance(radiusInKM, Metrics.KILOMETERS);
+        GeoResults<RouteLandmark> geoResults = routeLandmarkRepository.findByPositionNear(point, distance);
+
+        logger.info(E.COOL_MAN + E.COOL_MAN
+                + " findRouteLandmarksByLocation, landmarks: " + geoResults.getContent().size());
+
+        List<RouteLandmark> routeLandmarks = new ArrayList<>();
+
+        for (GeoResult<RouteLandmark> geoResult : geoResults) {
+            routeLandmarks.add(geoResult.getContent());
+        }
+
+        logger.info(E.COOL_MAN + E.COOL_MAN
+                + " findRouteLandmarksByLocation, routeLandmarks: " + routeLandmarks.size());
+
+
+        for (RouteLandmark filteredRoute : routeLandmarks) {
+            logger.info(E.BASKET_BALL + "Nearest RouteLandmark: " + filteredRoute.getRouteName()
+                    + E.HAND1 + " landmark: " + filteredRoute.getLandmarkName());
+        }
+
+        return routeLandmarks;
     }
 
     public List<Route> findAssociationRoutesByLocation(String associationId,

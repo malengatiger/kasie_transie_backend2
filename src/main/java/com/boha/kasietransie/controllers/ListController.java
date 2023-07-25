@@ -680,12 +680,11 @@ public class ListController {
     }
 
     @GetMapping("/findRouteLandmarksByLocation")
-    public ResponseEntity<Object> findRouteLandmarksByLocation(@RequestParam String associationId, @RequestParam double latitude,
+    public ResponseEntity<Object> findRouteLandmarksByLocation(@RequestParam double latitude,
                                                                @RequestParam double longitude,
                                                                @RequestParam double radiusInKM) {
         try {
             List<RouteLandmark> r = routeService.findRouteLandmarksByLocation(
-                    associationId,
                     latitude, longitude, radiusInKM);
 
             return ResponseEntity.ok(r);
@@ -693,6 +692,23 @@ public class ListController {
             return ResponseEntity.badRequest().body(
                     new CustomErrorResponse(400,
                             "findRouteLandmarksByLocation failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+    }
+    @GetMapping("/findAssociationRouteLandmarksByLocation")
+    public ResponseEntity<Object> findAssociationRouteLandmarksByLocation(@RequestParam String associationId, @RequestParam double latitude,
+                                                               @RequestParam double longitude,
+                                                               @RequestParam double radiusInKM) {
+        try {
+            List<RouteLandmark> r = routeService.findAssociationRouteLandmarksByLocation(
+                    associationId,
+                    latitude, longitude, radiusInKM);
+
+            return ResponseEntity.ok(r);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "findAssociationRouteLandmarksByLocation failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
     }
