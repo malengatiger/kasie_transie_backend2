@@ -12,7 +12,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.logging.Logger;
 
 @Data
-@Document(collation = "CommuterRequest")
+@Document(collection = "CommuterRequest")
 
 public class CommuterRequest {
     private String _partitionKey;

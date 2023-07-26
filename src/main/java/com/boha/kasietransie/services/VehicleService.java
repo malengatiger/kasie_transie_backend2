@@ -22,6 +22,10 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.geo.Circle;
+import org.springframework.data.geo.Distance;
+import org.springframework.data.geo.Metrics;
+import org.springframework.data.geo.Point;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -38,6 +42,9 @@ import java.time.Instant;
 import java.util.*;
 import java.util.logging.Logger;
 
+import static org.springframework.data.mongodb.core.query.Criteria.where;
+import static org.springframework.data.mongodb.core.query.Query.query;
+
 @Service
 public class VehicleService {
 
@@ -47,10 +54,13 @@ public class VehicleService {
     private final ResourceLoader resourceLoader;
     final UserRepository userRepository;
     final UserService userService;
+    final HeartbeatService heartbeatService;
     final CloudStorageUploaderService cloudStorageUploaderService;
 
     final MongoTemplate mongoTemplate;
     final MessagingService messagingService;
+    final RouteService routeService;
+
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private static final Logger logger = Logger.getLogger(VehicleService.class.getSimpleName());
 
@@ -61,19 +71,186 @@ public class VehicleService {
     public VehicleService(VehicleRepository vehicleRepository,
                           VehicleHeartbeatRepository vehicleHeartbeatRepository,
                           AssociationRepository associationRepository,
-                          ResourceLoader resourceLoader, UserRepository userRepository, UserService userService, CloudStorageUploaderService cloudStorageUploaderService, MongoTemplate mongoTemplate, MessagingService messagingService) {
+                          ResourceLoader resourceLoader, UserRepository userRepository, UserService userService, HeartbeatService heartbeatService, CloudStorageUploaderService cloudStorageUploaderService, MongoTemplate mongoTemplate, MessagingService messagingService, RouteService routeService) {
         this.vehicleRepository = vehicleRepository;
         this.vehicleHeartbeatRepository = vehicleHeartbeatRepository;
         this.associationRepository = associationRepository;
         this.resourceLoader = resourceLoader;
         this.userRepository = userRepository;
         this.userService = userService;
+        this.heartbeatService = heartbeatService;
         this.cloudStorageUploaderService = cloudStorageUploaderService;
         this.mongoTemplate = mongoTemplate;
         this.messagingService = messagingService;
+        this.routeService = routeService;
 
         logger.info(MM + " VehicleService constructed and shit injected! ");
 
+    }
+
+    Random random = new Random(System.currentTimeMillis());
+
+    public List<Vehicle> getCars(List<Vehicle> list, int numberOfCars) {
+        List<Vehicle> map = new ArrayList<>();
+        for (Vehicle vehicle : list) {
+            map.add(vehicle);
+            if (map.size() == numberOfCars) {
+                break;
+            }
+        }
+        //
+        return map;
+    }
+
+    public List<VehicleHeartbeat> generateHeartbeats(String associationId, int numberOfCars,
+                                                     int intervalInSeconds) {
+        List<Vehicle> all = vehicleRepository.findByAssociationId(associationId);
+        logger.info(E.BLUE_DOT + " found " + all.size()
+                + " cars for association: " + associationId + " ----- " + E.RED_DOT + E.RED_DOT);
+
+        List<VehicleHeartbeat> heartbeats = new ArrayList<>();
+        List<Vehicle> vehicleList = getCars(all, numberOfCars);
+
+        logger.info(E.BLUE_DOT + " processing " + vehicleList.size()
+                + " cars for heartbeat generation ...");
+        List<Route> routes = routeService.getAssociationRoutes(associationId);
+        List<Route> filteredRoutes = new ArrayList<>();
+        for (Route route : routes) {
+            long cnt = mongoTemplate.count(query(
+                    where("routeId").is(route.getRouteId())), RoutePoint.class);
+            if (cnt > 100) {
+                filteredRoutes.add(route);
+            }
+        }
+        logger.info(E.BLUE_DOT + " routes in play: " + filteredRoutes.size() + " routes ...");
+
+        int heartbeatCount = 0;
+
+        for (Vehicle vehicle : vehicleList) {
+            //move car along the route - ascending by index
+            int index = random.nextInt(filteredRoutes.size() - 1);
+            Route route = filteredRoutes.get(index);
+
+            List<RoutePoint> points = getPoints(route);
+            List<Integer> indices = getSortedIndices(points);
+            DateTime minutesAgo = DateTime.now().toDateTimeISO().minusMinutes(30);
+
+            logger.info(E.BLUE_DOT + route.getName() + " will be used for "
+                    + vehicle.getVehicleReg() + " starting at: " + minutesAgo +
+                    " number of points on route: " + indices.size());
+
+            for (Integer num : indices) {
+                RoutePoint rp = points.get(num);
+                VehicleHeartbeat vh = new VehicleHeartbeat();
+                vh.setVehicleId(vehicle.getVehicleId());
+                vh.setMake(vehicle.getMake());
+                vh.setModel(vehicle.getModel());
+                vh.setCreated(minutesAgo.toString());
+                vh.setAssociationId(vehicle.getAssociationId());
+                vh.setPosition(rp.getPosition());
+                vh.setOwnerId(vehicle.getOwnerId());
+                vh.setOwnerName(vehicle.getOwnerName());
+                vh.setVehicleReg(vehicle.getVehicleReg());
+                vh.setLongDate(minutesAgo.getMillis());
+                vh.setVehicleHeartbeatId(UUID.randomUUID().toString());
+
+                VehicleHeartbeat vhb = heartbeatService.addVehicleHeartbeat(vh);
+                heartbeats.add(vhb);
+                heartbeatCount++;
+                logger.info(E.CHECK + E.CHECK + " heartbeat added. "
+                        + E.DICE + " " + vh.getVehicleReg()
+                        + " " + vh.getCreated() + E.RED_APPLE + " index: " + num
+                        + " owner: " + vh.getOwnerName() + " " + E.RED_APPLE
+                        + " heartbeatCount: " + heartbeatCount + " created: " + vh.getCreated());
+                //
+                int addMin = random.nextInt(20);
+                if (addMin == 0) {
+                    addMin = 5;
+                }
+                minutesAgo = minutesAgo.plusMinutes(addMin);
+                try {
+                    Thread.sleep(intervalInSeconds * 1000L);
+                } catch (InterruptedException e) {
+                    //ignore
+                }
+            }
+
+        }
+
+        return heartbeats;
+    }
+
+    List<Integer> getSortedIndices(List<RoutePoint> points) {
+        List<Integer> indices = new ArrayList<>();
+        int count = random.nextInt(7);
+        if (count < 2) {
+            count = 5;
+        }
+        for (int i = 0; i < count; i++) {
+            int index = random.nextInt(points.size() - 1);
+            indices.add(index);
+        }
+        Collections.sort(indices);
+        return indices;
+    }
+
+    List<RoutePoint> getPoints(Route route) {
+        Criteria ownerCriteria = Criteria.where("routeId").is(route.getRouteId());
+        Query query = new Query(ownerCriteria).with(Sort.by("index"));
+
+        List<RoutePoint> list = mongoTemplate.find(query, RoutePoint.class);
+        logger.info(E.RED_APPLE + " .... Points found for " + route.getName()
+                + " : " + list.size());
+        return list;
+
+    }
+
+    public List<VehicleHeartbeat> findOwnerVehiclesByLocationAndTime(
+            String userId,
+            double latitude, double longitude, int minutes) {
+        Point point = new Point(latitude, longitude);
+        Distance distance = new Distance(100, Metrics.KILOMETERS);
+        Circle circle = new Circle(point, distance);
+//        Integer resultLimit = 20; //Limit to 20 records
+
+        DateTime now = DateTime.now().toDateTimeISO().minusMinutes(minutes);
+        String date = now.toString();
+        Criteria geoCriteria = Criteria.where("position").withinSphere(circle);
+        Criteria ownerCriteria = Criteria.where("ownerId").gte(userId);
+        Criteria dateCriteria = Criteria.where("created").gte(date);
+
+        Query query = Query.query(geoCriteria);
+        query.addCriteria(ownerCriteria);
+        query.addCriteria(dateCriteria);
+
+        List<VehicleHeartbeat> cars = mongoTemplate.find(query, VehicleHeartbeat.class);
+
+        logger.info(XX + " Number of cars: " + E.RED_DOT + cars.size());
+        return cars;
+    }
+
+    public List<VehicleHeartbeat> findAssociationVehiclesByLocationAndTime(
+            String associationId,
+            double latitude, double longitude, int minutes) {
+        Point point = new Point(latitude, longitude);
+        Distance distance = new Distance(100, Metrics.KILOMETERS);
+        Circle circle = new Circle(point, distance);
+//        Integer resultLimit = 20; //Limit to 20 records
+
+        DateTime now = DateTime.now().toDateTimeISO().minusMinutes(minutes);
+        String date = now.toString();
+        Criteria geoCriteria = Criteria.where("position").withinSphere(circle);
+        Criteria associationCriteria = Criteria.where("associationId").gte(associationId);
+        Criteria dateCriteria = Criteria.where("created").gte(date);
+
+        Query query = Query.query(geoCriteria);
+        query.addCriteria(associationCriteria);
+        query.addCriteria(dateCriteria);
+
+        List<VehicleHeartbeat> cars = mongoTemplate.find(query, VehicleHeartbeat.class);
+
+        logger.info(XX + " Number of cars: " + E.RED_DOT + cars.size());
+        return cars;
     }
 
     public Vehicle addVehicle(Vehicle vehicle) throws Exception {
@@ -94,7 +271,7 @@ public class VehicleService {
     public List<Vehicle> getAssociationVehicles(String associationId, int page) {
 
         Instant start = Instant.now();
-        PageRequest request = PageRequest.of(page,300, Sort.by("vehicleReg"));
+        PageRequest request = PageRequest.of(page, 300, Sort.by("vehicleReg"));
 
         Page<Vehicle> vehiclePage = vehicleRepository.findByAssociationId(associationId, request);
         int pages = vehiclePage.getTotalPages();
@@ -113,7 +290,7 @@ public class VehicleService {
         }
         //
         logger.info(E.RED_DOT + "number of cars: " + vehicles.size() + " page: " + page + " of size: 300");
-        logger.info(E.LEAF+E.LEAF+" Cars delivered. elapsed time: "
+        logger.info(E.LEAF + E.LEAF + " Cars delivered. elapsed time: "
                 + Duration.between(start, Instant.now()).toSeconds() + " seconds");
         return vehicles;
 
@@ -122,7 +299,7 @@ public class VehicleService {
     public List<Vehicle> getOwnerVehicles(String userId, int page) {
 
         Instant start = Instant.now();
-        PageRequest request = PageRequest.of(page,200, Sort.by("userId"));
+        PageRequest request = PageRequest.of(page, 200, Sort.by("userId"));
 
         Page<Vehicle> vehiclePage = vehicleRepository.findByOwnerId(userId, request);
         int pages = vehiclePage.getTotalPages();
@@ -141,7 +318,7 @@ public class VehicleService {
         }
         //
         logger.info(E.RED_DOT + "number of cars: " + vehicles.size() + " page: " + page + " of size: 300");
-        logger.info(E.LEAF+E.LEAF+" Cars delivered. elapsed time: "
+        logger.info(E.LEAF + E.LEAF + " Cars delivered. elapsed time: "
                 + Duration.between(start, Instant.now()).toSeconds() + " seconds");
 
         return vehicles;
@@ -221,7 +398,7 @@ public class VehicleService {
     }
 
     public List<VehicleUploadResponse> importVehiclesFromJSON(File file, String associationId) throws Exception {
-        logger.info(E.BLUE_DOT+E.BLUE_DOT+" importVehiclesFromJSON :" + associationId);
+        logger.info(E.BLUE_DOT + E.BLUE_DOT + " importVehiclesFromJSON :" + associationId);
 
         List<Association> asses = associationRepository.findByAssociationId(associationId);
         List<VehicleUploadResponse> vehicles = new ArrayList<>();
@@ -253,7 +430,7 @@ public class VehicleService {
                 nameMap.put(vehicle.getOwnerName(), vehicle.getOwnerName());
             }
             List<String> names = nameMap.values().stream().toList();
-            logger.info(E.BLUE_DOT+" owner names :" + names.size());
+            logger.info(E.BLUE_DOT + " owner names :" + names.size());
 
             for (String name : names) {
                 String[] strings = name.split(" ");
@@ -268,14 +445,14 @@ public class VehicleService {
                         vehicles.add(vehicle);
                     }
                 }
-                logger.info(E.BLUE_DOT+" owner cars :" + vehicles.size());
+                logger.info(E.BLUE_DOT + " owner cars :" + vehicles.size());
 
                 try {
                     List<VehicleUploadResponse> uploadResponses = createUserAndVehicles(asses.get(0), resultVehicles,
                             lastName, firstName, vehicles);
                     responses.addAll(uploadResponses);
-                    logger.info(E.LEAF+E.LEAF+E.LEAF
-                            +" uploadResponses has been created for owner: " + name + " responses: " +
+                    logger.info(E.LEAF + E.LEAF + E.LEAF
+                            + " uploadResponses has been created for owner: " + name + " responses: " +
                             " " + uploadResponses.size());
                 } catch (Exception e) {
                     throw new RuntimeException(e);
@@ -291,8 +468,8 @@ public class VehicleService {
     }
 
     private List<VehicleUploadResponse> createUserAndVehicles(Association ass,
-                                       List<Vehicle> resultVehicles, String lastName,
-                                       StringBuilder firstName, List<Vehicle> vehicles) throws Exception {
+                                                              List<Vehicle> resultVehicles, String lastName,
+                                                              StringBuilder firstName, List<Vehicle> vehicles) throws Exception {
         User user = new User();
         List<VehicleUploadResponse> responses = new ArrayList<>();
         try {
@@ -310,7 +487,7 @@ public class VehicleService {
                 mUser = userService.createUser(user);
             } catch (Exception e) {
                 VehicleUploadResponse rep = new VehicleUploadResponse(null,
-                        user.getName(),false, user.getCellphone());
+                        user.getName(), false, user.getCellphone());
                 responses.add(rep);
             }
             for (Vehicle vehicle : vehicles) {
@@ -330,7 +507,7 @@ public class VehicleService {
                         vehicleRepository.insert(vehicle);
                         resultVehicles.add(vehicle);
                         VehicleUploadResponse rep = new VehicleUploadResponse(vehicle.getVehicleReg(),
-                                vehicle.getOwnerName(),true, user.getCellphone());
+                                vehicle.getOwnerName(), true, user.getCellphone());
                         responses.add(rep);
                         logger.info(E.OK + E.OK + " ... we cool with QRCode for "
                                 + gson.toJson(vehicle) + " result: " + result);
@@ -341,7 +518,7 @@ public class VehicleService {
                     logger.severe(E.NOT_OK + " Unable to create QRCode for "
                             + vehicle.getVehicleReg());
                     VehicleUploadResponse rep = new VehicleUploadResponse(vehicle.getVehicleReg(),
-                            vehicle.getOwnerName(),false, user.getCellphone());
+                            vehicle.getOwnerName(), false, user.getCellphone());
                     responses.add(rep);
 
                 }
@@ -350,7 +527,7 @@ public class VehicleService {
                     " owner: " + user.getName());
         } catch (Exception e) {
             VehicleUploadResponse rep = new VehicleUploadResponse(null,
-                    user.getName(),false, user.getCellphone());
+                    user.getName(), false, user.getCellphone());
             responses.add(rep);
         }
         return responses;
@@ -362,7 +539,7 @@ public class VehicleService {
         List<VehicleUploadResponse> uploadResponses = new ArrayList<>();
         try {
             List<Vehicle> vehiclesFromCSVFile = FileToVehicles.getVehiclesFromCSVFile(file);
-            logger.info("importVehiclesFromCSV: vehiclesFromCSVFile: " +  vehiclesFromCSVFile.size());
+            logger.info("importVehiclesFromCSV: vehiclesFromCSVFile: " + vehiclesFromCSVFile.size());
 
             if (!asses.isEmpty()) {
                 uploadResponses = processVehiclesFromFile(associationId, asses, vehiclesFromCSVFile);
@@ -475,8 +652,6 @@ public class VehicleService {
         return v;
 
     }
-
-    Random random = new Random(System.currentTimeMillis());
 
     private String getOwnerName() {
         String[] firstNames = new String[]{"John", "Nancy", "David", "Eric G", "Thomas A", "George", "Freddie", "Benjamin", "Thabo",

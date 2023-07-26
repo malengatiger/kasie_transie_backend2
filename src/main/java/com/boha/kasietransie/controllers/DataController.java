@@ -66,6 +66,7 @@ public class DataController {
         }
 
     }
+
     /*
 
      */
@@ -83,11 +84,12 @@ public class DataController {
         }
 
     }
+
     @GetMapping("/updateRouteColor")
     public ResponseEntity<Object> updateRouteColor(@RequestParam String routeId, @RequestParam String color) {
 
         try {
-            Route v = routeService.updateRouteColor(routeId,color);
+            Route v = routeService.updateRouteColor(routeId, color);
             return ResponseEntity.ok(v);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
@@ -103,7 +105,7 @@ public class DataController {
             @RequestParam String routeId, @RequestParam int index) {
 
         try {
-            List<RoutePoint> v = routeService.deleteRoutePointsFromIndex(routeId,index);
+            List<RoutePoint> v = routeService.deleteRoutePointsFromIndex(routeId, index);
             return ResponseEntity.ok(v);
 
         } catch (Exception e) {
@@ -129,6 +131,7 @@ public class DataController {
         }
 
     }
+
     @PostMapping("/addCommuter")
     public ResponseEntity<Object> addCommuter(@RequestBody Commuter commuter) {
 
@@ -143,6 +146,7 @@ public class DataController {
         }
 
     }
+
     @PostMapping("/addCommuterRequest")
     public ResponseEntity<Object> addCommuterRequest(@RequestBody CommuterRequest request) {
 
@@ -157,6 +161,7 @@ public class DataController {
         }
 
     }
+
     @PostMapping("/updateVehicle")
     public ResponseEntity<Object> updateVehicle(@RequestBody Vehicle vehicle) {
 
@@ -173,7 +178,7 @@ public class DataController {
     }
 
     @PostMapping("/addBasicLandmark")
-    public ResponseEntity<Object> addLandmark(@RequestBody Landmark landmark)  {
+    public ResponseEntity<Object> addLandmark(@RequestBody Landmark landmark) {
 
         try {
             logger.info(E.RED_APPLE + " DataController: adding landmark: " + G.toJson(landmark));
@@ -187,8 +192,9 @@ public class DataController {
         }
 
     }
+
     @PostMapping("/addRouteLandmark")
-    public ResponseEntity<Object> addRouteLandmark(@RequestBody RouteLandmark landmark)  {
+    public ResponseEntity<Object> addRouteLandmark(@RequestBody RouteLandmark landmark) {
 
         try {
             logger.info(E.RED_APPLE + " DataController: adding route landmark: " + G.toJson(landmark));
@@ -204,7 +210,7 @@ public class DataController {
     }
 
     @PostMapping("/addRouteCity")
-    public ResponseEntity<Object> addRouteCity(@RequestBody RouteCity landmark)  {
+    public ResponseEntity<Object> addRouteCity(@RequestBody RouteCity landmark) {
 
         try {
             RouteCity v = routeService.addRouteCity(landmark);
@@ -217,8 +223,9 @@ public class DataController {
         }
 
     }
+
     @PostMapping("/addSettingsModel")
-    public ResponseEntity<Object> addSettingsModel(@RequestBody SettingsModel model)  {
+    public ResponseEntity<Object> addSettingsModel(@RequestBody SettingsModel model) {
 
         try {
             SettingsModel v = associationService.addSettingsModel(model);
@@ -231,8 +238,9 @@ public class DataController {
         }
 
     }
+
     @PostMapping("/addRoute")
-    public ResponseEntity<Object> addRoute(@RequestBody Route route)  {
+    public ResponseEntity<Object> addRoute(@RequestBody Route route) {
 
         try {
             Route v = routeService.addRoute(route);
@@ -245,8 +253,9 @@ public class DataController {
         }
 
     }
+
     @PostMapping("/addRoutePoints")
-    public ResponseEntity<Object> addRoutePoints(@RequestBody RoutePointList routePoints)  {
+    public ResponseEntity<Object> addRoutePoints(@RequestBody RoutePointList routePoints) {
 
         try {
             int v = routeService.addRoutePoints(routePoints.getRoutePoints());
@@ -259,8 +268,9 @@ public class DataController {
         }
 
     }
+
     @PostMapping("/addCalculatedDistances")
-    public ResponseEntity<Object> addCalculatedDistances(@RequestBody CalculatedDistanceList calculatedDistances)  {
+    public ResponseEntity<Object> addCalculatedDistances(@RequestBody CalculatedDistanceList calculatedDistances) {
 
         try {
             List<CalculatedDistance> v = routeService.addCalculatedDistances(calculatedDistances);
@@ -275,7 +285,7 @@ public class DataController {
     }
 
     @PostMapping("/addDispatchRecord")
-    public ResponseEntity<Object> addDispatchRecord(@RequestBody DispatchRecord dispatchRecord)  {
+    public ResponseEntity<Object> addDispatchRecord(@RequestBody DispatchRecord dispatchRecord) {
 
         try {
             DispatchRecord v = dispatchService.addDispatchRecord(dispatchRecord);
@@ -290,10 +300,10 @@ public class DataController {
     }
 
     @PostMapping("/addDispatchRecords")
-    public ResponseEntity<Object> addDispatchRecords(@RequestBody DispatchRecordList dispatchRecordList)  {
+    public ResponseEntity<Object> addDispatchRecords(@RequestBody DispatchRecordList dispatchRecordList) {
 
         try {
-           List<DispatchRecord> v = dispatchService.addDispatchRecords(dispatchRecordList);
+            List<DispatchRecord> v = dispatchService.addDispatchRecords(dispatchRecordList);
             return ResponseEntity.ok(v);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
@@ -305,10 +315,10 @@ public class DataController {
     }
 
     @PostMapping("/addVehicleHeartbeat")
-    public ResponseEntity<Object> addVehicleHeartbeat(@RequestBody VehicleHeartbeat vehicleHeartbeat)  {
+    public ResponseEntity<Object> addVehicleHeartbeat(@RequestBody VehicleHeartbeat vehicleHeartbeat) {
 
         try {
-            int v = heartbeatService.addVehicleHeartbeat(vehicleHeartbeat);
+            VehicleHeartbeat v = heartbeatService.addVehicleHeartbeat(vehicleHeartbeat);
             return ResponseEntity.ok(v);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
@@ -318,8 +328,9 @@ public class DataController {
         }
 
     }
+
     @PostMapping("/addVehicleArrival")
-    public ResponseEntity<Object> addVehicleArrival(@RequestBody VehicleArrival vehicleArrival)  {
+    public ResponseEntity<Object> addVehicleArrival(@RequestBody VehicleArrival vehicleArrival) {
 
         try {
             VehicleArrival v = dispatchService.addVehicleArrival(vehicleArrival);
@@ -332,8 +343,9 @@ public class DataController {
         }
 
     }
+
     @PostMapping("/addLocationRequest")
-    public ResponseEntity<Object> addLocationRequest(@RequestBody LocationRequest locationRequest)  {
+    public ResponseEntity<Object> addLocationRequest(@RequestBody LocationRequest locationRequest) {
 
         try {
             LocationRequest v = locationRequestService.addLocationRequest(locationRequest);
@@ -345,6 +357,7 @@ public class DataController {
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @PostMapping("/addLocationResponse")
     public ResponseEntity<Object> addLocationResponse(@RequestBody LocationResponse locationResponse) {
 
@@ -358,6 +371,7 @@ public class DataController {
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @PostMapping("/addUserGeofenceEvent")
     public ResponseEntity<Object> addUserGeofenceEvent(@RequestBody UserGeofenceEvent userGeofenceEvent) {
 
@@ -386,6 +400,7 @@ public class DataController {
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @PostMapping("/addAppError")
     public ResponseEntity<Object> addAppError(@RequestBody AppError appError) {
 
@@ -403,7 +418,7 @@ public class DataController {
 
 
     @PostMapping("/registerAssociation")
-    public ResponseEntity<Object> registerAssociation(@RequestBody Association association)  {
+    public ResponseEntity<Object> registerAssociation(@RequestBody Association association) {
 
         try {
             return ResponseEntity.ok(associationService.registerAssociation(association));
@@ -417,7 +432,7 @@ public class DataController {
     }
 
     @PostMapping("/updateUser")
-    public ResponseEntity<Object> updateUser(@RequestBody User user)  {
+    public ResponseEntity<Object> updateUser(@RequestBody User user) {
 
         try {
             return ResponseEntity.ok(userService.updateUser(user));
@@ -432,7 +447,7 @@ public class DataController {
 
     @PostMapping("/addRouteUpdateRequest")
     public ResponseEntity<Object> addRouteUpdateRequest(
-                                                          @RequestBody RouteUpdateRequest routeUpdateRequest)  {
+            @RequestBody RouteUpdateRequest routeUpdateRequest) {
 
         try {
             return ResponseEntity.ok(routeService.addRouteUpdateRequest(
@@ -445,9 +460,10 @@ public class DataController {
         }
 
     }
+
     @PostMapping("/addVehicleMediaRequest")
     public ResponseEntity<Object> addVehicleMediaRequest(
-            @RequestBody VehicleMediaRequest vehicleMediaRequest)  {
+            @RequestBody VehicleMediaRequest vehicleMediaRequest) {
 
         try {
             return ResponseEntity.ok(routeService.addVehicleMediaRequest(
@@ -460,14 +476,15 @@ public class DataController {
         }
 
     }
+
     @GetMapping("/sendVehicleUpdateMessage")
     public ResponseEntity<Object> sendVehicleUpdateMessage(
             @RequestParam String associationId,
-            @RequestParam String vehicleId)  {
+            @RequestParam String vehicleId) {
 
         try {
             return ResponseEntity.ok(messagingService.sendVehicleUpdateMessage(
-                    associationId,vehicleId));
+                    associationId, vehicleId));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
                     new CustomErrorResponse(400,
@@ -476,9 +493,10 @@ public class DataController {
         }
 
     }
+
     @PostMapping("/sendVehicleMediaRequestMessage")
     public ResponseEntity<Object> sendVehicleMediaRequestMessage(
-            @RequestParam VehicleMediaRequest request)  {
+            @RequestParam VehicleMediaRequest request) {
 
         try {
             return ResponseEntity.ok(messagingService.sendVehicleMediaRequestMessage(
@@ -497,11 +515,11 @@ public class DataController {
                                                           @RequestParam String firstName,
                                                           @RequestParam String lastName,
                                                           @RequestParam String associationName,
-                                                          @RequestParam String email)  {
+                                                          @RequestParam String email) {
 
         try {
             return ResponseEntity.ok(associationService.generateFakeAssociation(
-                    associationName,email,testCellphoneNumber,firstName,lastName));
+                    associationName, email, testCellphoneNumber, firstName, lastName));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
                     new CustomErrorResponse(400,
@@ -510,8 +528,9 @@ public class DataController {
         }
 
     }
+
     @GetMapping("/generateFakeVehiclesFromFile")
-    public ResponseEntity<Object> generateFakeVehiclesFromFile(@RequestParam String associationId)  {
+    public ResponseEntity<Object> generateFakeVehiclesFromFile(@RequestParam String associationId) {
 
         try {
             return ResponseEntity.ok(vehicleService.generateFakeVehiclesFromFile(
@@ -524,13 +543,14 @@ public class DataController {
         }
 
     }
+
     @GetMapping("/generateFakeVehicles")
     public ResponseEntity<Object> generateFakeVehicles(@RequestParam String associationId,
                                                        @RequestParam int number) {
 
         try {
             return ResponseEntity.ok(vehicleService.generateFakeVehicles(
-                    associationId,number));
+                    associationId, number));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
                     new CustomErrorResponse(400,
@@ -541,7 +561,7 @@ public class DataController {
     }
 
     @GetMapping("/deleteRoutePoint")
-    public ResponseEntity<Object> deleteRoutePoint(@RequestParam String routePointId)  {
+    public ResponseEntity<Object> deleteRoutePoint(@RequestParam String routePointId) {
 
         try {
             return ResponseEntity.ok(routeService.deleteRoutePoint(routePointId));
@@ -553,8 +573,9 @@ public class DataController {
         }
 
     }
+
     @GetMapping("/deleteByLandmarkId")
-    public ResponseEntity<Object> deleteByLandmarkId(@RequestParam String landmarkId)  {
+    public ResponseEntity<Object> deleteByLandmarkId(@RequestParam String landmarkId) {
 
         try {
             return ResponseEntity.ok(landmarkService.deleteLandmark(landmarkId));
@@ -704,7 +725,7 @@ public class DataController {
 
 
     @GetMapping("/addCountriesStatesCitiesToDB")
-    public ResponseEntity<Object> addCountriesStatesCitiesToDB()  {
+    public ResponseEntity<Object> addCountriesStatesCitiesToDB() {
 
         try {
             return ResponseEntity.ok(mongoService.addCountriesStatesCitiesToDB());
@@ -718,7 +739,7 @@ public class DataController {
     }
 
     @GetMapping("/addSouthAfricanCitiesToDB")
-    public ResponseEntity<Object> addSouthAfricanCitiesToDB()  {
+    public ResponseEntity<Object> addSouthAfricanCitiesToDB() {
 
         try {
             return ResponseEntity.ok(mongoService.addSouthAfricanCitiesToDB());
@@ -774,6 +795,7 @@ public class DataController {
         }
 
     }
+
     @GetMapping("/createDartFile")
     public ResponseEntity<Object> createDartFile() {
 
@@ -788,6 +810,7 @@ public class DataController {
         }
 
     }
+
     @PostMapping("uploadFile")
     public ResponseEntity<Object> uploadFile(
             @RequestParam String objectName,
@@ -816,6 +839,7 @@ public class DataController {
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @PostMapping("addVehiclePhoto")
     public ResponseEntity<Object> addVehiclePhoto(
             @RequestBody VehiclePhoto vehiclePhoto) {
@@ -830,6 +854,7 @@ public class DataController {
         }
 
     }
+
     @PostMapping("addVehicleVideo")
     public ResponseEntity<Object> addVehicleVideo(
             @RequestBody VehicleVideo vehiclePhoto) {
@@ -859,6 +884,7 @@ public class DataController {
         }
 
     }
+
     @PostMapping("addAmbassadorPassengerCount")
     public ResponseEntity<Object> addAmbassadorPassengerCount(
             @RequestBody AmbassadorPassengerCount count) {
@@ -884,6 +910,79 @@ public class DataController {
             return ResponseEntity.badRequest().body(
                     new CustomErrorResponse(400,
                             "changeFakeVehicleOwner failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+
+    }
+
+    @GetMapping("/generateHeartbeats")
+    public ResponseEntity<Object> generateHeartbeats(@RequestParam String associationId,
+                                                     @RequestParam int numberOfCars,
+                                                     @RequestParam int intervalInSeconds) {
+        try {
+
+            List<VehicleHeartbeat> m = vehicleService.generateHeartbeats(
+                    associationId, numberOfCars, intervalInSeconds);
+            return ResponseEntity.ok(m);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "generateHeartbeats failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+
+    }
+
+    @GetMapping("/generateCommuterRequests")
+    public ResponseEntity<Object> generateCommuterRequests(
+            @RequestParam String associationId,
+            @RequestParam int numberOfCommuters,
+            @RequestParam int intervalInSeconds) {
+        try {
+
+            List<CommuterRequest> m = commuterService.generateCommuterRequests(
+                    associationId, intervalInSeconds, numberOfCommuters);
+            return ResponseEntity.ok(m);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "generateCommuterRequest failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+
+    }
+
+    @GetMapping("/generateAmbassadorPassengerCounts")
+    public ResponseEntity<Object> generateAmbassadorPassengerCounts(
+            @RequestParam String associationId,
+            @RequestParam int numberOfCars,
+            @RequestParam int intervalInSeconds) {
+        try {
+            List<AmbassadorPassengerCount> m = ambassadorService.generateAmbassadorPassengerCounts(
+                    associationId, numberOfCars, intervalInSeconds);
+            return ResponseEntity.ok(m);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "generateAmbassadorPassengerCounts failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+
+    }
+
+    @GetMapping("/generateDispatchRecords")
+    public ResponseEntity<Object> generateDispatchRecords(
+            @RequestParam String associationId,
+            @RequestParam int numberOfCars,
+            @RequestParam int intervalInSeconds) {
+        try {
+            List<DispatchRecord> m = dispatchService.generateDispatchRecords(
+                    associationId, numberOfCars, intervalInSeconds);
+            return ResponseEntity.ok(m);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "generateDispatchRecords failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
 

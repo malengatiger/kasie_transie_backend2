@@ -11,7 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.logging.Logger;
 
 @Data
-@Document(collation = "Commuter")
+@Document(collection = "Commuter")
 public class Commuter {
     private String _partitionKey;
     @Id

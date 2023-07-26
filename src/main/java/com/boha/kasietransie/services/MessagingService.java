@@ -28,7 +28,8 @@ public class MessagingService {
             Message message = buildMessage("vehicleArrival", topic,
                     G.toJson(vehicleArrival), notification);
             FirebaseMessaging.getInstance().send(message);
-            LOGGER.info(MM + "VehicleArrival message sent via FCM " + G.toJson(vehicleArrival));
+            LOGGER.info(MM + "VehicleArrival message sent via FCM " + vehicleArrival.getVehicleReg()
+            + " at " + vehicleArrival.getLandmarkName());
         } catch (Exception e) {
             LOGGER.error("Failed to send vehicleArrival FCM message");
             e.printStackTrace();
@@ -67,6 +68,25 @@ public class MessagingService {
 
         } catch (Exception e) {
             LOGGER.error("Failed to send locationRequest FCM message");
+            e.printStackTrace();
+        }
+    }
+
+    public void sendMessage(VehicleHeartbeat heartbeat) {
+        try {
+            String topic = "heartbeat_" + heartbeat.getAssociationId();
+//            Notification notification = Notification.builder()
+//                    .setBody("A vehicle location has been requested ")
+//                    .setTitle("Vehicle Location Request")
+//                    .build();
+
+            Message message = buildMessage("heartbeat", topic,
+                    G.toJson(heartbeat));
+            FirebaseMessaging.getInstance().send(message);
+            LOGGER.info(MM + "VehicleHeartbeat message sent via FCM: " + heartbeat.getVehicleReg());
+
+        } catch (Exception e) {
+            LOGGER.error("Failed to send VehicleHeartbeat FCM message");
             e.printStackTrace();
         }
     }
@@ -165,7 +185,7 @@ public class MessagingService {
             Message message = buildMessage("dispatchRecord", topic,
                     G.toJson(dispatchRecord));
             FirebaseMessaging.getInstance().send(message);
-            LOGGER.info(MM + "DispatchRecord message sent via FCM: " + G.toJson(dispatchRecord));
+            LOGGER.info(MM + "DispatchRecord message sent via FCM: " + dispatchRecord.getLandmarkName());
 
         } catch (Exception e) {
             LOGGER.error("Failed to send dispatchRecord FCM message");
@@ -175,7 +195,7 @@ public class MessagingService {
 
     public void sendMessage(CommuterRequest commuterRequest) {
         try {
-            String topic = "commuterRequest_" + commuterRequest.getRouteId();
+            String topic = "commuterRequest_" + commuterRequest.getAssociationId();
             Notification notification = Notification.builder()
                     .setBody("A request has arrived from Commuter for Route: "
                             + commuterRequest.getRouteName())
@@ -183,10 +203,10 @@ public class MessagingService {
                     .build();
 
             Message message = buildMessage("commuterRequest", topic,
-                    commuterRequest.getRouteId(), notification);
+                    G.toJson(commuterRequest), notification);
 
             FirebaseMessaging.getInstance().send(message);
-            LOGGER.info(MM + "CommuterRequest message sent via FCM: " + G.toJson(commuterRequest));
+            LOGGER.info(MM + "CommuterRequest message sent via FCM: " +commuterRequest.getRouteLandmarkName());
 
         } catch (Exception e) {
             LOGGER.error("Failed to send commuterRequest FCM message");
@@ -200,7 +220,7 @@ public class MessagingService {
             Message message = buildMessage("passengerCount", topic,
                     G.toJson(passengerCount));
             FirebaseMessaging.getInstance().send(message);
-            LOGGER.info(MM + "AmbassadorPassengerCount message sent via FCM: " + G.toJson(passengerCount));
+            LOGGER.info(MM + "AmbassadorPassengerCount message sent via FCM: " + passengerCount.getRouteLandmarkName());
 
         } catch (Exception e) {
             LOGGER.error("Failed to send passengerCount FCM message");

@@ -19,15 +19,18 @@ public class HeartbeatService {
 
     private final HeartbeatRepository heartbeatRepository;
     private final MongoTemplate mongoTemplate;
+    final MessagingService messagingService;
 
-    public HeartbeatService(HeartbeatRepository heartbeatRepository, MongoTemplate mongoTemplate) {
+    public HeartbeatService(HeartbeatRepository heartbeatRepository, MongoTemplate mongoTemplate, MessagingService messagingService) {
         this.heartbeatRepository = heartbeatRepository;
         this.mongoTemplate = mongoTemplate;
+        this.messagingService = messagingService;
     }
 
-    public int addVehicleHeartbeat(VehicleHeartbeat heartbeat) {
-        heartbeatRepository.insert(heartbeat);
-       return 0;
+    public VehicleHeartbeat addVehicleHeartbeat(VehicleHeartbeat heartbeat) {
+       VehicleHeartbeat hb = heartbeatRepository.insert(heartbeat);
+       messagingService.sendMessage(hb);
+       return hb;
     }
     public List<VehicleHeartbeat> getAssociationVehicleHeartbeats(String associationId, int cutoffHours) {
         DateTime dt = DateTime.now().minusHours(cutoffHours);

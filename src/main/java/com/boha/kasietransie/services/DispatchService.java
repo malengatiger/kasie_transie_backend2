@@ -5,9 +5,11 @@ import com.boha.kasietransie.data.CounterBag;
 import com.boha.kasietransie.data.DispatchRecordList;
 import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.data.repos.*;
+import com.boha.kasietransie.util.E;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.geo.GeoResult;
 import org.springframework.data.geo.GeoResults;
 import org.springframework.data.geo.Point;
@@ -21,6 +23,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.util.UUID;
 
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 import static org.springframework.data.mongodb.core.query.Query.query;
@@ -35,6 +39,10 @@ public class DispatchService {
     final HeartbeatService heartbeatService;
     private final MongoTemplate mongoTemplate;
     final AmbassadorPassengerCountRepository ambassadorPassengerCountRepository;
+
+    final RouteService routeService;
+    final VehicleRepository vehicleRepository;
+    final UserRepository userRepository;
     private static final Logger logger = LoggerFactory.getLogger(DispatchService.class);
 
 
@@ -42,7 +50,7 @@ public class DispatchService {
                            VehicleArrivalRepository vehicleArrivalRepository,
                            VehicleDepartureRepository vehicleDepartureRepository,
                            VehicleHeartbeatRepository vehicleHeartbeatRepository, MessagingService messagingService,
-                           HeartbeatService heartbeatService, MongoTemplate mongoTemplate, AmbassadorPassengerCountRepository ambassadorPassengerCountRepository) {
+                           HeartbeatService heartbeatService, MongoTemplate mongoTemplate, AmbassadorPassengerCountRepository ambassadorPassengerCountRepository, RouteService routeService, VehicleRepository vehicleRepository, UserRepository userRepository) {
         this.dispatchRecordRepository = dispatchRecordRepository;
         this.vehicleArrivalRepository = vehicleArrivalRepository;
         this.vehicleDepartureRepository = vehicleDepartureRepository;
@@ -51,6 +59,9 @@ public class DispatchService {
         this.heartbeatService = heartbeatService;
         this.mongoTemplate = mongoTemplate;
         this.ambassadorPassengerCountRepository = ambassadorPassengerCountRepository;
+        this.routeService = routeService;
+        this.vehicleRepository = vehicleRepository;
+        this.userRepository = userRepository;
     }
 
     public DispatchRecord addDispatchRecord(DispatchRecord dispatchRecord) {
@@ -117,12 +128,15 @@ public class DispatchService {
     public long countVehicleArrivals(String vehicleId) {
         return mongoTemplate.count(query(where("vehicleId").is(vehicleId)), VehicleArrival.class);
     }
+
     public long countVehiclePassengerCounts(String vehicleId) {
         return mongoTemplate.count(query(where("vehicleId").is(vehicleId)), AmbassadorPassengerCount.class);
     }
+
     public long countVehicleDepartures(String vehicleId) {
         return mongoTemplate.count(query(where("vehicleId").is(vehicleId)), VehicleDeparture.class);
     }
+
     public long countVehicleDeparturesByDate(String vehicleId, String startDate) {
         Query query = new Query();
         query.addCriteria(Criteria.where("vehicleId").is(vehicleId)
@@ -133,30 +147,35 @@ public class DispatchService {
     public long countVehicleDispatches(String vehicleId) {
         return mongoTemplate.count(query(where("vehicleId").is(vehicleId)), DispatchRecord.class);
     }
+
     public long countVehicleArrivalsByDate(String vehicleId, String startDate) {
         Query query = new Query();
         query.addCriteria(Criteria.where("vehicleId").is(vehicleId)
                 .andOperator(Criteria.where("created").gte(startDate)));
         return mongoTemplate.count(query, VehicleArrival.class);
     }
+
     public long countVehicleHeartbeatsByDate(String vehicleId, String startDate) {
         Query query = new Query();
         query.addCriteria(Criteria.where("vehicleId").is(vehicleId)
                 .andOperator(Criteria.where("created").gte(startDate)));
         return mongoTemplate.count(query, VehicleHeartbeat.class);
     }
+
     public long countPassengerCountsByDate(String vehicleId, String startDate) {
         Query query = new Query();
         query.addCriteria(Criteria.where("vehicleId").is(vehicleId)
                 .andOperator(Criteria.where("created").gte(startDate)));
         return mongoTemplate.count(query, AmbassadorPassengerCount.class);
     }
+
     public long countDispatchesByDate(String vehicleId, String startDate) {
         Query query = new Query();
         query.addCriteria(Criteria.where("vehicleId").is(vehicleId)
                 .andOperator(Criteria.where("created").gte(startDate)));
         return mongoTemplate.count(query, DispatchRecord.class);
     }
+
     public List<VehicleArrival> getAssociationVehicleArrivals(String associationId) {
         return vehicleArrivalRepository.findByAssociationId(associationId);
     }
@@ -188,6 +207,7 @@ public class DispatchService {
 
         return list;
     }
+
     public List<CounterBag> getVehicleCounts(String vehicleId) {
         Instant start = Instant.now();
         long departures = countVehicleDepartures(vehicleId);
@@ -215,6 +235,7 @@ public class DispatchService {
 
         return list;
     }
+
     //
     public List<VehicleArrival> findVehicleArrivalsByLocation(String associationId,
                                                               double latitude,
@@ -253,12 +274,13 @@ public class DispatchService {
 
         return list;
     }
+
     public List<VehicleDeparture> findVehicleDeparturesByLocation(String associationId,
-                                                              double latitude,
-                                                              double longitude,
-                                                              double radiusInKM,
-                                                              int minutes,
-                                                              int limit) {
+                                                                  double latitude,
+                                                                  double longitude,
+                                                                  double radiusInKM,
+                                                                  int minutes,
+                                                                  int limit) {
 
 
         //calculate start date
@@ -294,50 +316,56 @@ public class DispatchService {
     public List<VehicleDeparture> getLandmarkVehicleDepartures(String landmarkId) {
         return vehicleDepartureRepository.findByLandmarkId(landmarkId);
     }
+
     public List<VehicleDeparture> getOwnerVehicleDepartures(String userId, String startDate) {
         Query query = new Query();
         query.addCriteria(Criteria.where("ownerId").is(userId)
                 .andOperator(Criteria.where("created").gte(startDate)));
 
-        return mongoTemplate.find(query,VehicleDeparture.class);
+        return mongoTemplate.find(query, VehicleDeparture.class);
 
     }
-    public List<VehicleArrival> getOwnerVehicleArrivals(String userId,  String startDate) {
+
+    public List<VehicleArrival> getOwnerVehicleArrivals(String userId, String startDate) {
         Query query = new Query();
         query.addCriteria(Criteria.where("ownerId").is(userId)
                 .andOperator(Criteria.where("created").gte(startDate)));
 
-        return mongoTemplate.find(query,VehicleArrival.class);
+        return mongoTemplate.find(query, VehicleArrival.class);
     }
-    public List<DispatchRecord> getOwnerDispatchRecords(String userId,  String startDate) {
+
+    public List<DispatchRecord> getOwnerDispatchRecords(String userId, String startDate) {
         Query query = new Query();
         query.addCriteria(Criteria.where("ownerId").is(userId)
                 .andOperator(Criteria.where("created").gte(startDate)));
 
-        return mongoTemplate.find(query,DispatchRecord.class);
+        return mongoTemplate.find(query, DispatchRecord.class);
     }
+
     public List<VehicleHeartbeat> getOwnerVehicleHeartbeats(String userId, String startDate) {
         Query query = new Query();
         query.addCriteria(Criteria.where("ownerId").is(userId)
                 .andOperator(Criteria.where("created").gte(startDate)));
 
-        return mongoTemplate.find(query,VehicleHeartbeat.class);
+        return mongoTemplate.find(query, VehicleHeartbeat.class);
     }
+
     public List<AmbassadorPassengerCount> getOwnerPassengerCounts(String userId, String startDate) {
         Query query = new Query();
         query.addCriteria(Criteria.where("ownerId").is(userId)
                 .andOperator(Criteria.where("created").gte(startDate)));
 
-        return mongoTemplate.find(query,AmbassadorPassengerCount.class);
+        return mongoTemplate.find(query, AmbassadorPassengerCount.class);
     }
+
     public BigBag getOwnersBag(String userId, String startDate) {
 
         BigBag bag = new BigBag();
-        bag.setDispatchRecords(getOwnerDispatchRecords(userId,startDate));
-        bag.setVehicleArrivals(getOwnerVehicleArrivals(userId,startDate));
-        bag.setVehicleDepartures(getOwnerVehicleDepartures(userId,startDate));
-        bag.setVehicleHeartbeats(getOwnerVehicleHeartbeats(userId,startDate));
-        bag.setPassengerCounts(getOwnerPassengerCounts(userId,startDate));
+        bag.setDispatchRecords(getOwnerDispatchRecords(userId, startDate));
+        bag.setVehicleArrivals(getOwnerVehicleArrivals(userId, startDate));
+        bag.setVehicleDepartures(getOwnerVehicleDepartures(userId, startDate));
+        bag.setVehicleHeartbeats(getOwnerVehicleHeartbeats(userId, startDate));
+        bag.setPassengerCounts(getOwnerPassengerCounts(userId, startDate));
         return bag;
     }
 
@@ -357,8 +385,153 @@ public class DispatchService {
         }
         ambassadorPassengerCountRepository.saveAll(counts);
 
-        return  "Passenger counts fixed: " + counts.size();
+        return "Passenger counts fixed: " + counts.size();
 
     }
+
+    Random random = new Random(System.currentTimeMillis());
+
+    public List<DispatchRecord> generateDispatchRecords(
+            String associationId, int numberOfCars, int intervalInSeconds) {
+        List<Vehicle> all = vehicleRepository.findByAssociationId(associationId);
+        logger.info(E.BLUE_DOT + " found " + all.size()
+                + " cars for association: " + associationId + " ----- " + E.RED_DOT + E.RED_DOT);
+
+        List<Vehicle> vehicleList;
+        if (all.size() >= numberOfCars) {
+            vehicleList = all;
+        } else {
+            vehicleList = getCars(all, numberOfCars);
+        }
+
+        logger.info(E.BLUE_DOT + " processing " + vehicleList.size()
+                + " cars for dispatch record generation ...");
+        List<Route> routes = routeService.getAssociationRoutes(associationId);
+        List<Route> filteredRoutes = new ArrayList<>();
+        for (Route route : routes) {
+            long cnt = mongoTemplate.count(query(
+                    where("routeId").is(route.getRouteId())), RouteLandmark.class);
+            if (cnt > 0) {
+                filteredRoutes.add(route);
+            }
+        }
+        logger.info(E.BLUE_DOT + " routes in play: " + filteredRoutes.size() + " routes ...");
+        List<User> users = userRepository.findByAssociationId(associationId);
+        List<DispatchRecord> dispatchRecords = new ArrayList<>();
+
+        for (Vehicle vehicle : vehicleList) {
+            int index = random.nextInt(filteredRoutes.size() - 1);
+            Route route = filteredRoutes.get(index);
+            Criteria c = Criteria.where("routeId").is(route.getRouteId());
+            Query query = new Query(c).with(Sort.by("index"));
+            List<RouteLandmark> marks = mongoTemplate.find(query, RouteLandmark.class);
+            DateTime minutesAgo = DateTime.now().toDateTimeISO().minusHours(1);
+
+            logger.info(E.BLUE_DOT + route.getName() + " will be used for "
+                    + vehicle.getVehicleReg() + " starting at: " + minutesAgo +
+                    " number of routeLandmarks on route: " + marks.size());
+
+            for (RouteLandmark mark : marks) {
+                minutesAgo = handleDispatch(intervalInSeconds, users, dispatchRecords, vehicle, minutesAgo, mark);
+            }
+        }
+
+        return dispatchRecords;
+    }
+
+    private DateTime handleDispatch(int intervalInSeconds, List<User> users,
+                                    List<DispatchRecord> dispatchRecords,
+                                    Vehicle vehicle, DateTime minutesAgo,
+                                    RouteLandmark mark) {
+        int userIndex = random.nextInt(users.size() - 1);
+        User user = users.get(userIndex);
+        handleArrival(vehicle, minutesAgo, mark);
+        int addMin0 = random.nextInt(20);
+        if (addMin0 == 0) {
+            addMin0 = 5;
+        }
+        minutesAgo = minutesAgo.plusMinutes(addMin0);
+        DispatchRecord dp = getDispatchRecord(vehicle, minutesAgo, mark, user);
+
+        int passengers = random.nextInt(20);
+        if (passengers < 3) passengers = 16;
+        dp.setPassengers(passengers);
+        //
+        DispatchRecord rec = addDispatchRecord(dp);
+        dispatchRecords.add(rec);
+
+        int addMin = random.nextInt(20);
+        if (addMin == 0) {
+            addMin = 5;
+        }
+        minutesAgo = minutesAgo.plusMinutes(addMin);
+        try {
+            Thread.sleep(intervalInSeconds * 1000L);
+        } catch (InterruptedException e) {
+            //ignore
+        }
+        //
+        logger.info(E.LEAF + E.LEAF + " dispatch record added: " + dp.getVehicleReg()
+                + " in: " + dp.getPassengers() + " at landmark: " + dp.getLandmarkName()
+                + " of route: " + dp.getRouteName() + " " + E.BLUE_BIRD);
+        return minutesAgo;
+    }
+
+    private void handleArrival(Vehicle vehicle, DateTime minutesAgo, RouteLandmark mark) {
+        VehicleArrival va = new VehicleArrival();
+        va.setDispatched(false);
+        va.setCreated(minutesAgo.toString());
+        va.setAssociationName(vehicle.getAssociationName());
+        va.setAssociationId(vehicle.getAssociationId());
+        va.setPosition(mark.getPosition());
+        va.setLandmarkName(mark.getLandmarkName());
+        va.setOwnerId(vehicle.getOwnerId());
+        va.setOwnerName(vehicle.getOwnerName());
+        va.setMake(vehicle.getMake());
+        va.setModel(vehicle.getModel());
+        va.setLandmarkId(mark.getLandmarkId());
+        va.setVehicleId(vehicle.getVehicleId());
+        va.setVehicleReg(vehicle.getVehicleReg());
+        va.setVehicleArrivalId(UUID.randomUUID().toString());
+        addVehicleArrival(va);
+        logger.info(E.LEAF + E.LEAF + " arrival record added: " + va.getVehicleReg()
+                + " at landmark: " + va.getLandmarkName() + " " + E.BLUE_BIRD);
+    }
+
+    private static DispatchRecord getDispatchRecord(Vehicle vehicle, DateTime minutesAgo, RouteLandmark mark, User user) {
+        DispatchRecord dp = new DispatchRecord();
+        dp.setDispatched(true);
+        dp.setMarshalId(user.getUserId());
+        dp.setMarshalName(user.getName());
+        dp.setCreated(minutesAgo.toString());
+        dp.setLandmarkName(mark.getLandmarkName());
+        dp.setDispatchRecordId(UUID.randomUUID().toString());
+        dp.setOwnerId(vehicle.getOwnerId());
+        dp.setPosition(mark.getPosition());
+        dp.setAssociationId(vehicle.getAssociationId());
+        dp.setVehicleReg(vehicle.getVehicleReg());
+        dp.setVehicleId(vehicle.getVehicleId());
+        dp.setRouteLandmarkId(mark.getLandmarkId());
+        dp.setAssociationId(vehicle.getAssociationId());
+        dp.setAssociationName(vehicle.getAssociationName());
+        dp.setRouteId(mark.getRouteId());
+        dp.setRouteName(mark.getRouteName());
+        dp.setLandmarkName(mark.getLandmarkName());
+        dp.setOwnerId(vehicle.getOwnerId());
+        return dp;
+    }
+
+    public List<Vehicle> getCars(List<Vehicle> list, int numberOfCars) {
+        List<Vehicle> vehicles = new ArrayList<>();
+        for (Vehicle vehicle : list) {
+            vehicles.add(vehicle);
+            if (vehicles.size() == numberOfCars) {
+                break;
+            }
+        }
+        //
+        return vehicles;
+    }
+
 
 }

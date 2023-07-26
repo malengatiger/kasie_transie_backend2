@@ -59,6 +59,7 @@ public class ListController {
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/getUserById")
     public ResponseEntity<Object> getUserById(@RequestParam String userId) {
         try {
@@ -79,7 +80,7 @@ public class ListController {
             if (user == null) {
                 throw new Exception("We are not winning! User is null, Chief!");
             }
-            logger.info(E.LEAF+" user found? " + user.getName());
+            logger.info(E.LEAF + " user found? " + user.getName());
             return ResponseEntity.ok(user);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
@@ -315,6 +316,7 @@ public class ListController {
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/getAssociationAmbassadorCheckIn")
     public ResponseEntity<Object> getAssociationAmbassadorCheckIn(@RequestParam String associationId, @RequestParam String startDate) {
         try {
@@ -328,6 +330,7 @@ public class ListController {
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/getVehicleAmbassadorCheckIn")
     public ResponseEntity<Object> getVehicleAmbassadorCheckIn(@RequestParam String vehicleId, @RequestParam String startDate) {
         try {
@@ -341,6 +344,7 @@ public class ListController {
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/getUserAmbassadorCheckIn")
     public ResponseEntity<Object> getUserAmbassadorCheckIn(@RequestParam String userId, @RequestParam String startDate) {
         try {
@@ -368,6 +372,7 @@ public class ListController {
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/getUserAmbassadorPassengerCounts")
     public ResponseEntity<Object> getUserAmbassadorPassengerCounts(@RequestParam String userId, @RequestParam String startDate) {
         try {
@@ -381,6 +386,7 @@ public class ListController {
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/getVehicleAmbassadorPassengerCounts")
     public ResponseEntity<Object> getVehicleAmbassadorPassengerCounts(@RequestParam String vehicleId, @RequestParam String startDate) {
         try {
@@ -394,6 +400,7 @@ public class ListController {
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/getOwnersBag")
     public ResponseEntity<Object> getOwnersBag(@RequestParam String userId, @RequestParam String startDate) {
         try {
@@ -493,6 +500,7 @@ public class ListController {
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/getOwnerVehicles")
     public ResponseEntity<Object> getOwnerVehicles(@RequestParam String userId, @RequestParam int page) {
         try {
@@ -506,6 +514,7 @@ public class ListController {
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/downloadExampleVehiclesFile")
     public ResponseEntity<Object> downloadExampleVehiclesFile(HttpServletRequest request, final HttpServletResponse response) {
         try {
@@ -561,6 +570,7 @@ public class ListController {
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/getAssociationVehicleMediaRequests")
     public ResponseEntity<Object> getAssociationVehicleMediaRequests(
             @RequestParam String associationId, @RequestParam String startDate) {
@@ -589,6 +599,7 @@ public class ListController {
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/getVehicleVideos")
     public ResponseEntity<Object> getVehicleVideos(@RequestParam String vehicleId) {
         try {
@@ -695,10 +706,52 @@ public class ListController {
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
+    @GetMapping("/findAssociationVehiclesByLocationAndTime")
+    public ResponseEntity<Object> findAssociationVehiclesByLocationAndTime(
+            @RequestParam String associationId,
+            @RequestParam double latitude,
+
+            @RequestParam double longitude,
+            @RequestParam int minutes) {
+        try {
+            List<VehicleHeartbeat> r = vehicleService
+                    .findAssociationVehiclesByLocationAndTime(
+                            associationId, latitude, longitude, minutes);
+
+            return ResponseEntity.ok(r);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "findAssociationVehiclesByLocationAndTime failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+    }
+
+    @GetMapping("/findOwnerVehiclesByLocationAndTime")
+    public ResponseEntity<Object> findOwnerVehiclesByLocationAndTime(
+            @RequestParam String userId,
+            @RequestParam double latitude,
+            @RequestParam double longitude,
+            @RequestParam int minutes) {
+        try {
+            List<VehicleHeartbeat> r = vehicleService
+                    .findOwnerVehiclesByLocationAndTime(
+                            userId, latitude, longitude, minutes);
+
+            return ResponseEntity.ok(r);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "findOwnerVehiclesByLocationAndTime failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+    }
+
     @GetMapping("/findAssociationRouteLandmarksByLocation")
     public ResponseEntity<Object> findAssociationRouteLandmarksByLocation(@RequestParam String associationId, @RequestParam double latitude,
-                                                               @RequestParam double longitude,
-                                                               @RequestParam double radiusInKM) {
+                                                                          @RequestParam double longitude,
+                                                                          @RequestParam double radiusInKM) {
         try {
             List<RouteLandmark> r = routeService.findAssociationRouteLandmarksByLocation(
                     associationId,
@@ -742,6 +795,7 @@ public class ListController {
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/getRouteUpdateRequests")
     public ResponseEntity<Object> getRouteUpdateRequests(@RequestParam String routeId) {
         try {

@@ -35,3 +35,5 @@ mongodump --uri mongodb+srv://geomaster3:khaya1Son@atlascluster.r8p9mgu.mongodb.
 
 mongorestore --uri mongodb+srv://geomaster3:khaya1Son@cluster0.j5rskeq.mongodb.net
 
+//run this to ensure that cloud run works with clouud storage
+gcloud iam service-accounts add-iam-policy-binding 79998394043-compute@developer.gserviceaccount.com --role="roles/iam.serviceAccountTokenCreator" --member="serviceAccount:79998394043-compute@developer.gserviceaccount.com"
