@@ -1,10 +1,7 @@
 package com.boha.kasietransie.services;
 
 import com.boha.kasietransie.data.dto.*;
-import com.boha.kasietransie.data.repos.CommuterRepository;
-import com.boha.kasietransie.data.repos.CommuterRequestRepository;
-import com.boha.kasietransie.data.repos.CommuterResponseRepository;
-import com.boha.kasietransie.data.repos.UserRepository;
+import com.boha.kasietransie.data.repos.*;
 import com.boha.kasietransie.util.E;
 import com.google.api.core.ApiFuture;
 import com.google.firebase.auth.FirebaseAuth;
@@ -44,11 +41,12 @@ public class CommuterService {
     private final MailService mailService;
     final MessagingService messagingService;
     final UserRepository userRepository;
+    final RouteRepository routeRepository;
     final RouteService routeService;
     final MongoTemplate mongoTemplate;
 
 
-    public CommuterService(CommuterRepository commuterRepository, CommuterRequestRepository commuterRequestRepository, CommuterResponseRepository commuterResponseRepository, CloudStorageUploaderService cloudStorageUploaderService, MailService mailService, MessagingService messagingService, UserRepository userRepository, RouteService routeService, MongoTemplate mongoTemplate) {
+    public CommuterService(CommuterRepository commuterRepository, CommuterRequestRepository commuterRequestRepository, CommuterResponseRepository commuterResponseRepository, CloudStorageUploaderService cloudStorageUploaderService, MailService mailService, MessagingService messagingService, UserRepository userRepository, RouteRepository routeRepository, RouteService routeService, MongoTemplate mongoTemplate) {
         this.commuterRepository = commuterRepository;
         this.commuterRequestRepository = commuterRequestRepository;
         this.commuterResponseRepository = commuterResponseRepository;
@@ -56,6 +54,7 @@ public class CommuterService {
         this.mailService = mailService;
         this.messagingService = messagingService;
         this.userRepository = userRepository;
+        this.routeRepository = routeRepository;
         this.routeService = routeService;
         this.mongoTemplate = mongoTemplate;
     }
@@ -198,6 +197,70 @@ public class CommuterService {
         }
         logger.info(E.BLUE_DOT+E.BLUE_BIRD+" commuters generated: " + list.size());
         return list;
+    }
+    public List<CommuterRequest> generateRouteCommuterRequests(
+            String routeId, int intervalInSeconds, int numberOfCommuters) {
+
+        Route route =  null;
+        List<Route> routes = routeRepository.findByRouteId(routeId);
+        if (!routes.isEmpty()) {
+            route = routes.get(0);
+        }
+        if (route == null) {
+            return new ArrayList<>();
+        }
+
+        List<Commuter> commuters = commuterRepository.findAll();
+        commuters.addAll(generateCommuters(numberOfCommuters));
+
+        List<CommuterRequest> commuterRequests = new ArrayList<>();
+        logger.info(E.BLUE_DOT + " commuters in play: " + commuters.size() + " commuters ...");
+
+        DateTime minutesAgo = DateTime.now().toDateTimeISO().minusHours(1);
+        Criteria c = Criteria.where("routeId").is(route.getRouteId());
+        Query query = new Query(c).with(Sort.by("index"));
+        List<RouteLandmark> routeLandmarks = mongoTemplate.find(query, RouteLandmark.class);
+
+        for (Commuter commuter : commuters) {
+            int landmarkIndex = random.nextInt(routeLandmarks.size() - 1);
+            RouteLandmark mark = routeLandmarks.get(landmarkIndex);
+            int passengers = random.nextInt(16);
+            if (passengers == 0) passengers = 1;
+            CommuterRequest cr = new CommuterRequest();
+            cr.setCommuterRequestId(UUID.randomUUID().toString());
+            cr.setCommuterId(commuter.getCommuterId());
+            cr.setDateRequested(minutesAgo.toString());
+            cr.setAssociationId(mark.getAssociationId());
+            cr.setCurrentPosition(mark.getPosition());
+            cr.setRouteId(mark.getRouteId());
+            cr.setRouteName(mark.getRouteName());
+            cr.setNumberOfPassengers(passengers);
+            cr.setRouteLandmarkId(mark.getLandmarkId());
+            cr.setRouteLandmarkName(mark.getLandmarkName());
+            cr.setDestinationCityId(route.getRouteStartEnd().getEndCityId());
+            cr.setDestinationCityName(route.getRouteStartEnd().getEndCityName());
+            cr.setOriginCityId(route.getRouteStartEnd().getStartCityId());
+            cr.setOriginCityName(route.getRouteStartEnd().getStartCityName());
+            cr.setNumberOfPassengers(passengers);
+            //
+            CommuterRequest request = addCommuterRequest(cr);
+            commuterRequests.add(request);
+            //
+            int addMin = random.nextInt(10);
+            if (addMin == 0) {
+                addMin = 1;
+            }
+            minutesAgo = minutesAgo.plusMinutes(addMin);
+            try {
+                Thread.sleep(intervalInSeconds * 1000L);
+            } catch (InterruptedException e) {
+                //ignore
+            }
+        }
+        logger.info(E.LEAF + E.LEAF + " commuter request added: "
+                + " route: " + route.getName() + " at: " + commuterRequests.size() + " requests generated"
+                + " " + E.FLOWER_RED );
+        return commuterRequests;
     }
     public List<CommuterRequest> generateCommuterRequests(
             String associationId, int intervalInSeconds, int numberOfCommuters) {

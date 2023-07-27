@@ -1,10 +1,7 @@
 package com.boha.kasietransie.services;
 
 import com.boha.kasietransie.data.dto.*;
-import com.boha.kasietransie.data.repos.AmbassadorCheckInRepository;
-import com.boha.kasietransie.data.repos.AmbassadorPassengerCountRepository;
-import com.boha.kasietransie.data.repos.UserRepository;
-import com.boha.kasietransie.data.repos.VehicleRepository;
+import com.boha.kasietransie.data.repos.*;
 import com.boha.kasietransie.util.E;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -33,18 +30,20 @@ public class AmbassadorService {
 
     final VehicleRepository vehicleRepository;
     final UserRepository userRepository;
+    final RouteRepository routeRepository;
     final RouteService routeService;
 
     public AmbassadorService(AmbassadorCheckInRepository ambassadorCheckInRepository,
                              AmbassadorPassengerCountRepository ambassadorPassengerCountRepository,
                              MongoTemplate mongoTemplate, MessagingService messagingService,
-                             VehicleRepository vehicleRepository, UserRepository userRepository, RouteService routeService) {
+                             VehicleRepository vehicleRepository, UserRepository userRepository, RouteRepository routeRepository, RouteService routeService) {
         this.ambassadorCheckInRepository = ambassadorCheckInRepository;
         this.ambassadorPassengerCountRepository = ambassadorPassengerCountRepository;
         this.mongoTemplate = mongoTemplate;
         this.messagingService = messagingService;
         this.vehicleRepository = vehicleRepository;
         this.userRepository = userRepository;
+        this.routeRepository = routeRepository;
         this.routeService = routeService;
     }
 
@@ -113,6 +112,63 @@ public class AmbassadorService {
 
     Random random = new Random(System.currentTimeMillis());
 
+    public List<AmbassadorPassengerCount> generateRoutePassengerCounts(
+            String routeId, int numberOfCars, int intervalInSeconds) {
+        List<Vehicle> all = vehicleRepository.findByAssociationId(routeId);
+        logger.info(E.BLUE_DOT + " found " + all.size()
+                + " cars for route: " + routeId + " ----- " + E.RED_DOT + E.RED_DOT);
+
+        List<Vehicle> vehicleList = getCars(all, numberOfCars);
+        logger.info(E.BLUE_DOT + " processing " + vehicleList.size()
+                + " cars for passengerCount generation ...");
+        for (Vehicle vehicle : vehicleList) {
+            logger.info(E.OK+E.OK+" vehicle included: " + E.RED_APPLE + vehicle.getVehicleReg()
+                    + " " + E.FLOWER_RED + " owner: " + vehicle.getOwnerName());
+        }
+        Route route = null;
+        List<Route> routes = routeRepository.findByRouteId(routeId);
+        if (!routes.isEmpty()) {
+            route = routes.get(0);
+        }
+        if (route == null) {
+            return new ArrayList<>();
+        }
+        List<User> users = userRepository.findByAssociationId(route.getAssociationId());
+        Criteria c = Criteria.where("routeId").is(routeId);
+        Query query = new Query(c).with(Sort.by("index"));
+        List<RouteLandmark> routeLandmarks = mongoTemplate.find(query, RouteLandmark.class);
+        List<AmbassadorPassengerCount> passengerCounts = new ArrayList<>();
+
+        for (Vehicle vehicle : vehicleList) {
+            DateTime minutesAgo = DateTime.now().toDateTimeISO().minusHours(1);
+            int landmarkIndex = 0;
+            AmbassadorPassengerCount previousAPC = null;
+
+            for (RouteLandmark mark : routeLandmarks) {
+                AmbassadorPassengerCount apc = getAmbassadorPassengerCount(users, passengerCounts,
+                        vehicle, routeLandmarks, minutesAgo, landmarkIndex, previousAPC, mark);
+                int addMin = random.nextInt(20);
+                if (addMin == 0) {
+                    addMin = 5;
+                }
+                minutesAgo = minutesAgo.plusMinutes(addMin);
+                try {
+                    Thread.sleep(intervalInSeconds * 1000L);
+                } catch (InterruptedException e) {
+                    //ignore
+                }
+                //
+                previousAPC = apc;
+                landmarkIndex++;
+                logger.info(E.LEAF + E.LEAF + " passenger count added: " + apc.getVehicleReg()
+                        + " in: " + apc.getPassengersIn() + " out: " + apc.getPassengersOut()
+                        + " current: " + apc.getCurrentPassengers() + E.LEAF + " at landmark: " + apc.getRouteLandmarkName()
+                        + " of route: " + apc.getRouteName() + " " + E.BLUE_BIRD);
+            }
+        }
+
+        return passengerCounts;
+    }
     public List<AmbassadorPassengerCount> generateAmbassadorPassengerCounts(
             String associationId, int numberOfCars, int intervalInSeconds) {
         List<Vehicle> all = vehicleRepository.findByAssociationId(associationId);
@@ -122,6 +178,12 @@ public class AmbassadorService {
         List<Vehicle> vehicleList = getCars(all, numberOfCars);
         logger.info(E.BLUE_DOT + " processing " + vehicleList.size()
                 + " cars for heartbeat generation ...");
+        logger.info(E.BLUE_DOT + " processing " + vehicleList.size()
+                + " cars for passengerCount generation ...");
+        for (Vehicle vehicle : vehicleList) {
+            logger.info(E.OK+E.OK+" vehicle included: " + E.RED_APPLE + vehicle.getVehicleReg()
+                    + " " + E.FLOWER_RED + " owner: " + vehicle.getOwnerName());
+        }
         List<Route> routes = routeService.getAssociationRoutes(associationId);
         List<Route> filteredRoutes = new ArrayList<>();
         for (Route route : routes) {

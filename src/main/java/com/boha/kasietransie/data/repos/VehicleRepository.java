@@ -13,6 +13,9 @@ public interface VehicleRepository extends MongoRepository<Vehicle, String> {
 
     List<Vehicle> findByOwnerId(String userId);
 
+    List<Vehicle> findByVehicleId(String vehicleId);
+
+
     Page<Vehicle> findByAssociationId(String associationId, Pageable pageable);
 
     Page<Vehicle> findByOwnerId(String userId, Pageable pageable);

@@ -951,6 +951,24 @@ public class DataController {
         }
 
     }
+    @GetMapping("/generateRouteCommuterRequests")
+    public ResponseEntity<Object> generateRouteCommuterRequests(
+            @RequestParam String routeId,
+            @RequestParam int numberOfCommuters,
+            @RequestParam int intervalInSeconds) {
+        try {
+
+            List<CommuterRequest> m = commuterService.generateRouteCommuterRequests(
+                    routeId, intervalInSeconds, numberOfCommuters);
+            return ResponseEntity.ok(m);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "generateRouteCommuterRequests failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+
+    }
 
     @GetMapping("/generateAmbassadorPassengerCounts")
     public ResponseEntity<Object> generateAmbassadorPassengerCounts(
@@ -965,6 +983,23 @@ public class DataController {
             return ResponseEntity.badRequest().body(
                     new CustomErrorResponse(400,
                             "generateAmbassadorPassengerCounts failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+
+    }
+    @GetMapping("/generateRoutePassengerCounts")
+    public ResponseEntity<Object> generateRoutePassengerCounts(
+            @RequestParam String routeId,
+            @RequestParam int numberOfCars,
+            @RequestParam int intervalInSeconds) {
+        try {
+            List<AmbassadorPassengerCount> m = ambassadorService.generateRoutePassengerCounts(
+                    routeId, numberOfCars, intervalInSeconds);
+            return ResponseEntity.ok(m);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "generateRoutePassengerCounts failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
 
@@ -987,6 +1022,24 @@ public class DataController {
         }
 
     }
+    @GetMapping("/generateRouteDispatchRecords")
+    public ResponseEntity<Object> generateRouteDispatchRecords(
+            @RequestParam String routeId,
+            @RequestParam int numberOfCars,
+            @RequestParam int intervalInSeconds) {
+        try {
+            List<DispatchRecord> m = dispatchService.generateRouteDispatchRecords(
+                    routeId, numberOfCars, intervalInSeconds);
+            return ResponseEntity.ok(m);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "generateRouteDispatchRecords failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+
+    }
+
 
     @GetMapping("/fixOwnerToPassengerCounts")
     public ResponseEntity<Object> fixOwnerToPassengerCounts(@RequestParam String userId,

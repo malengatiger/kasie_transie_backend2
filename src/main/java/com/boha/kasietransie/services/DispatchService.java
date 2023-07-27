@@ -42,6 +42,7 @@ public class DispatchService {
 
     final RouteService routeService;
     final VehicleRepository vehicleRepository;
+    final RouteRepository routeRepository;
     final UserRepository userRepository;
     private static final Logger logger = LoggerFactory.getLogger(DispatchService.class);
 
@@ -50,7 +51,7 @@ public class DispatchService {
                            VehicleArrivalRepository vehicleArrivalRepository,
                            VehicleDepartureRepository vehicleDepartureRepository,
                            VehicleHeartbeatRepository vehicleHeartbeatRepository, MessagingService messagingService,
-                           HeartbeatService heartbeatService, MongoTemplate mongoTemplate, AmbassadorPassengerCountRepository ambassadorPassengerCountRepository, RouteService routeService, VehicleRepository vehicleRepository, UserRepository userRepository) {
+                           HeartbeatService heartbeatService, MongoTemplate mongoTemplate, AmbassadorPassengerCountRepository ambassadorPassengerCountRepository, RouteService routeService, VehicleRepository vehicleRepository, RouteRepository routeRepository, UserRepository userRepository) {
         this.dispatchRecordRepository = dispatchRecordRepository;
         this.vehicleArrivalRepository = vehicleArrivalRepository;
         this.vehicleDepartureRepository = vehicleDepartureRepository;
@@ -61,6 +62,7 @@ public class DispatchService {
         this.ambassadorPassengerCountRepository = ambassadorPassengerCountRepository;
         this.routeService = routeService;
         this.vehicleRepository = vehicleRepository;
+        this.routeRepository = routeRepository;
         this.userRepository = userRepository;
     }
 
@@ -391,6 +393,48 @@ public class DispatchService {
 
     Random random = new Random(System.currentTimeMillis());
 
+    public List<DispatchRecord> generateRouteDispatchRecords(
+            String routeId, int numberOfCars, int intervalInSeconds) {
+        List<Vehicle> all = vehicleRepository.findByAssociationId(routeId);
+        logger.info(E.BLUE_DOT + " found " + all.size()
+                + " cars for route: " + routeId + " ----- " + E.RED_DOT + E.RED_DOT);
+
+        List<Vehicle> vehicleList;
+        if (numberOfCars >= all.size()) {
+            vehicleList = all;
+        } else {
+            vehicleList = getCars(all, numberOfCars);
+        }
+             Route route = null;
+        List<Route> routes = routeRepository.findByRouteId(routeId);
+        if (!routes.isEmpty()) {
+            route = routes.get(0);
+        }
+        if (route == null) {
+            return new ArrayList<>();
+        }
+        logger.info(E.BLUE_DOT + " processing " + vehicleList.size()
+                + " cars for dispatch record generation ... on route: " + route.getName());
+
+        List<User> users = userRepository.findByAssociationId(routeId);
+        List<DispatchRecord> dispatchRecords = new ArrayList<>();
+        Criteria c = Criteria.where("routeId").is(routeId);
+        Query query = new Query(c).with(Sort.by("index"));
+        List<RouteLandmark> routeLandmarks = mongoTemplate.find(query, RouteLandmark.class);
+
+        for (Vehicle vehicle : vehicleList) {
+            DateTime minutesAgo = DateTime.now().toDateTimeISO().minusHours(1);
+            logger.info(E.BLUE_DOT + route.getName() + " will be used for "
+                    + vehicle.getVehicleReg() + " starting at: " + minutesAgo +
+                    " number of routeLandmarks on route: " + routeLandmarks.size());
+            for (RouteLandmark mark : routeLandmarks) {
+                minutesAgo = handleDispatch(intervalInSeconds, users, dispatchRecords, vehicle, minutesAgo, mark);
+            }
+        }
+
+        return dispatchRecords;
+    }
+
     public List<DispatchRecord> generateDispatchRecords(
             String associationId, int numberOfCars, int intervalInSeconds) {
         List<Vehicle> all = vehicleRepository.findByAssociationId(associationId);
@@ -398,7 +442,7 @@ public class DispatchService {
                 + " cars for association: " + associationId + " ----- " + E.RED_DOT + E.RED_DOT);
 
         List<Vehicle> vehicleList;
-        if (all.size() >= numberOfCars) {
+        if (numberOfCars >= all.size()) {
             vehicleList = all;
         } else {
             vehicleList = getCars(all, numberOfCars);
@@ -446,6 +490,11 @@ public class DispatchService {
         int userIndex = random.nextInt(users.size() - 1);
         User user = users.get(userIndex);
         handleArrival(vehicle, minutesAgo, mark);
+        try {
+            Thread.sleep(random.nextInt(10) * 1000L);
+        } catch (InterruptedException e) {
+            //ignore
+        }
         int addMin0 = random.nextInt(20);
         if (addMin0 == 0) {
             addMin0 = 5;
@@ -472,7 +521,7 @@ public class DispatchService {
         }
         //
         logger.info(E.LEAF + E.LEAF + " dispatch record added: " + dp.getVehicleReg()
-                + " in: " + dp.getPassengers() + " at landmark: " + dp.getLandmarkName()
+                + " passengers: " + dp.getPassengers() + " at landmark: " + dp.getLandmarkName()
                 + " of route: " + dp.getRouteName() + " " + E.BLUE_BIRD);
         return minutesAgo;
     }
