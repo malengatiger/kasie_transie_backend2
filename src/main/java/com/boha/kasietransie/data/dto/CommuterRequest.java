@@ -3,7 +3,6 @@ package com.boha.kasietransie.data.dto;
 import com.boha.kasietransie.util.E;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
@@ -53,7 +52,7 @@ public class CommuterRequest {
                 db.getCollection(CommuterRequest.class.getSimpleName());
 
         dbCollection.createIndex(
-                Indexes.ascending("commuterId"));
+                Indexes.ascending("dateRequested","commuterId"));
 
         dbCollection.createIndex(
                 Indexes.ascending("routeId"));

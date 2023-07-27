@@ -91,6 +91,12 @@ public class AmbassadorService {
         Query query = new Query(c);
         return mongoTemplate.find(query, AmbassadorPassengerCount.class);
     }
+    public List<AmbassadorPassengerCount> getRoutePassengerCounts(String routeId, String startDate) {
+        Criteria c = Criteria.where("routeId").is(routeId)
+                .and("created").gte(startDate);
+        Query query = new Query(c).with(Sort.by("created").descending());
+        return mongoTemplate.find(query, AmbassadorPassengerCount.class);
+    }
 
     public List<AmbassadorPassengerCount> getVehicleAmbassadorPassengerCounts(String vehicleId, String startDate) {
         Criteria c = Criteria.where("vehicleId").is(vehicleId)
@@ -111,6 +117,7 @@ public class AmbassadorService {
     }
 
     Random random = new Random(System.currentTimeMillis());
+
 
     public List<AmbassadorPassengerCount> generateRoutePassengerCounts(
             String routeId, int numberOfCars, int intervalInSeconds) {

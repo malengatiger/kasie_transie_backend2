@@ -62,6 +62,21 @@ public class CommuterService {
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private static final Logger logger = Logger.getLogger(CommuterService.class.getSimpleName());
 
+    public List<CommuterRequest> getAssociationCommuterRequests(String associationId, String startDate) {
+        Criteria c = Criteria.where("associationId").is(associationId)
+                .and("dateRequested").gte(startDate);
+
+        Query query = new Query(c).with(Sort.by("dateRequested").descending());
+        return mongoTemplate.find(query, CommuterRequest.class);
+    }
+
+    public List<CommuterRequest> getRouteCommuterRequests(String routeId, String startDate) {
+        Criteria c = Criteria.where("routeId").is(routeId)
+                .and("dateRequested").gte(startDate);
+
+        Query query = new Query(c).with(Sort.by("dateRequested").descending());
+        return mongoTemplate.find(query, CommuterRequest.class);
+    }
     public Commuter createCommuter(Commuter commuter) throws Exception {
         logger.info("\uD83E\uDDE1\uD83E\uDDE1 create commuter : " + gson.toJson(commuter));
         FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();

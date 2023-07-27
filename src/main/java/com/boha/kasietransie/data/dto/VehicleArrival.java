@@ -40,7 +40,7 @@ public class VehicleArrival {
                 db.getCollection(VehicleArrival.class.getSimpleName());
 
         dbCollection.createIndex(
-                Indexes.ascending("landmarkId"));
+                Indexes.ascending("created","landmarkId"));
 
         dbCollection.createIndex(
                 Indexes.ascending("vehicleId"));

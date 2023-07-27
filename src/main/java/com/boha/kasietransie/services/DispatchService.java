@@ -66,6 +66,37 @@ public class DispatchService {
         this.userRepository = userRepository;
     }
 
+    public List<DispatchRecord> getAssociationDispatchRecords(String associationId, String startDate) {
+        Criteria c = Criteria.where("associationId").is(associationId)
+                .and("created").gte(startDate);
+
+        Query query = new Query(c).with(Sort.by("created").descending());
+        return mongoTemplate.find(query, DispatchRecord.class);
+    }
+
+    public List<DispatchRecord> getRouteDispatchRecords(String routeId, String startDate) {
+        Criteria c = Criteria.where("routeId").is(routeId)
+                .and("created").gte(startDate);
+
+        Query query = new Query(c).with(Sort.by("created").descending());
+        return mongoTemplate.find(query, DispatchRecord.class);
+    }
+    public List<VehicleArrival> getAssociationVehicleArrivals(String associationId, String startDate) {
+        Criteria c = Criteria.where("associationId").is(associationId)
+                .and("created").gte(startDate);
+
+        Query query = new Query(c).with(Sort.by("created").descending());
+        return mongoTemplate.find(query, VehicleArrival.class);
+    }
+
+    public List<VehicleArrival> getRouteVehicleArrivals(String routeId, String startDate) {
+        Criteria c = Criteria.where("routeId").is(routeId)
+                .and("created").gte(startDate);
+
+        Query query = new Query(c).with(Sort.by("created").descending());
+        return mongoTemplate.find(query, VehicleArrival.class);
+    }
+
     public DispatchRecord addDispatchRecord(DispatchRecord dispatchRecord) {
         DispatchRecord rec = dispatchRecordRepository.insert(dispatchRecord);
         messagingService.sendMessage(rec);

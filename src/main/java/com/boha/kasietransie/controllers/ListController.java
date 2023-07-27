@@ -46,6 +46,7 @@ public class ListController {
     private final LandmarkService landmarkService;
     private final MediaService mediaService;
     final AmbassadorService ambassadorService;
+    final CommuterService commuterService;
 
     @GetMapping("/getRoutePointAggregate")
     public ResponseEntity<Object> getRoutePointAggregate() {
@@ -369,6 +370,104 @@ public class ListController {
             return ResponseEntity.badRequest().body(
                     new CustomErrorResponse(400,
                             "getAssociationAmbassadorPassengerCounts failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+    }
+    @GetMapping("/getRoutePassengerCounts")
+    public ResponseEntity<Object> getRoutePassengerCounts(
+            @RequestParam String routeId, @RequestParam String startDate) {
+        try {
+            List<AmbassadorPassengerCount> ass = ambassadorService
+                    .getRoutePassengerCounts(routeId, startDate);
+            return ResponseEntity.ok(ass);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "getRoutePassengerCounts failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+    }
+    @GetMapping("/getAssociationCommuterRequests")
+    public ResponseEntity<Object> getAssociationCommuterRequests(
+            @RequestParam String associationId, @RequestParam String startDate) {
+        try {
+            List<CommuterRequest> ass = commuterService
+                    .getAssociationCommuterRequests(associationId, startDate);
+            return ResponseEntity.ok(ass);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "getAssociationCommuterRequests failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+    }
+    @GetMapping("/getRouteCommuterRequests")
+    public ResponseEntity<Object> getRouteCommuterRequests(
+            @RequestParam String routeId, @RequestParam String startDate) {
+        try {
+            List<CommuterRequest> ass = commuterService
+                    .getRouteCommuterRequests(routeId, startDate);
+            return ResponseEntity.ok(ass);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "getRouteCommuterRequests failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+    }
+    @GetMapping("/getRouteDispatchRecords")
+    public ResponseEntity<Object> getRouteDispatchRecords(
+            @RequestParam String routeId, @RequestParam String startDate) {
+        try {
+            List<DispatchRecord> ass = dispatchService
+                    .getRouteDispatchRecords(routeId, startDate);
+            return ResponseEntity.ok(ass);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "getRouteDispatchRecords failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+    }
+    @GetMapping("/getAssociationDispatchRecords")
+    public ResponseEntity<Object> getAssociationDispatchRecords(
+            @RequestParam String associationId, @RequestParam String startDate) {
+        try {
+            List<DispatchRecord> ass = dispatchService
+                    .getAssociationDispatchRecords(associationId, startDate);
+            return ResponseEntity.ok(ass);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "getAssociationDispatchRecords failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+    }
+    @GetMapping("/getAssociationVehicleArrivals")
+    public ResponseEntity<Object> getAssociationVehicleArrivals(
+            @RequestParam String associationId, @RequestParam String startDate) {
+        try {
+            List<VehicleArrival> ass = dispatchService
+                    .getAssociationVehicleArrivals(associationId, startDate);
+            return ResponseEntity.ok(ass);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "getAssociationVehicleArrivals failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+    }
+    @GetMapping("/getRouteVehicleArrivals")
+    public ResponseEntity<Object> getRouteVehicleArrivals(
+            @RequestParam String routeId, @RequestParam String startDate) {
+        try {
+            List<VehicleArrival> ass = dispatchService
+                    .getRouteVehicleArrivals(routeId, startDate);
+            return ResponseEntity.ok(ass);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "getRouteVehicleArrivals failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
     }
