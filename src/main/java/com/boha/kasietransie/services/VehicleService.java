@@ -1,10 +1,7 @@
 package com.boha.kasietransie.services;
 
 import com.boha.kasietransie.data.dto.*;
-import com.boha.kasietransie.data.repos.AssociationRepository;
-import com.boha.kasietransie.data.repos.UserRepository;
-import com.boha.kasietransie.data.repos.VehicleHeartbeatRepository;
-import com.boha.kasietransie.data.repos.VehicleRepository;
+import com.boha.kasietransie.data.repos.*;
 import com.boha.kasietransie.util.Constants;
 import com.boha.kasietransie.util.E;
 import com.boha.kasietransie.util.FileToVehicles;
@@ -60,6 +57,7 @@ public class VehicleService {
     final MongoTemplate mongoTemplate;
     final MessagingService messagingService;
     final RouteService routeService;
+    final RouteRepository routeRepository;
 
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private static final Logger logger = Logger.getLogger(VehicleService.class.getSimpleName());
@@ -71,7 +69,7 @@ public class VehicleService {
     public VehicleService(VehicleRepository vehicleRepository,
                           VehicleHeartbeatRepository vehicleHeartbeatRepository,
                           AssociationRepository associationRepository,
-                          ResourceLoader resourceLoader, UserRepository userRepository, UserService userService, HeartbeatService heartbeatService, CloudStorageUploaderService cloudStorageUploaderService, MongoTemplate mongoTemplate, MessagingService messagingService, RouteService routeService) {
+                          ResourceLoader resourceLoader, UserRepository userRepository, UserService userService, HeartbeatService heartbeatService, CloudStorageUploaderService cloudStorageUploaderService, MongoTemplate mongoTemplate, MessagingService messagingService, RouteService routeService, RouteRepository routeRepository) {
         this.vehicleRepository = vehicleRepository;
         this.vehicleHeartbeatRepository = vehicleHeartbeatRepository;
         this.associationRepository = associationRepository;
@@ -83,6 +81,7 @@ public class VehicleService {
         this.mongoTemplate = mongoTemplate;
         this.messagingService = messagingService;
         this.routeService = routeService;
+        this.routeRepository = routeRepository;
 
         logger.info(MM + " VehicleService constructed and shit injected! ");
 
@@ -126,42 +125,42 @@ public class VehicleService {
 
         int heartbeatCount = 0;
 
+        HashMap<String, List<RoutePoint>> hashMap = new HashMap<>();
+
         for (Vehicle vehicle : vehicleList) {
             //move car along the route - ascending by index
             int index = random.nextInt(filteredRoutes.size() - 1);
             Route route = filteredRoutes.get(index);
 
-            List<RoutePoint> points = getPoints(route);
+            List<RoutePoint> points;
+            if (hashMap.get(route.getRouteId()) != null) {
+                points = hashMap.get(route.getRouteId());
+            } else {
+                points = getPoints(route);
+                hashMap.put(route.getRouteId(), points);
+            }
+
             List<Integer> indices = getSortedIndices(points);
             DateTime minutesAgo = DateTime.now().toDateTimeISO().minusMinutes(30);
 
-            logger.info(E.BLUE_DOT + route.getName() + " will be used for "
-                    + vehicle.getVehicleReg() + " starting at: " + minutesAgo +
-                    " number of points on route: " + indices.size());
+            logger.info("\n\n" + E.BLUE_DOT + E.BLUE_DOT + E.BLUE_DOT + E.BLUE_DOT
+                    + route.getName() + " will be used for "
+                    + vehicle.getVehicleReg() + E.RED_APPLE + " starting at: " + minutesAgo +
+                    " number of heartbeats to generate on route: " + E.FERN + " " + indices.size());
 
-            for (Integer num : indices) {
-                RoutePoint rp = points.get(num);
-                VehicleHeartbeat vh = new VehicleHeartbeat();
-                vh.setVehicleId(vehicle.getVehicleId());
-                vh.setMake(vehicle.getMake());
-                vh.setModel(vehicle.getModel());
-                vh.setCreated(minutesAgo.toString());
-                vh.setAssociationId(vehicle.getAssociationId());
-                vh.setPosition(rp.getPosition());
-                vh.setOwnerId(vehicle.getOwnerId());
-                vh.setOwnerName(vehicle.getOwnerName());
-                vh.setVehicleReg(vehicle.getVehicleReg());
-                vh.setLongDate(minutesAgo.getMillis());
-                vh.setVehicleHeartbeatId(UUID.randomUUID().toString());
+            for (Integer routePointIndex : indices) {
+                RoutePoint rp = points.get(routePointIndex);
+                VehicleHeartbeat heartbeat = getVehicleHeartbeat(vehicle, minutesAgo, rp);
+                VehicleHeartbeat addedVehicleHeartbeat = heartbeatService.addVehicleHeartbeat(heartbeat);
+                heartbeats.add(addedVehicleHeartbeat);
 
-                VehicleHeartbeat vhb = heartbeatService.addVehicleHeartbeat(vh);
-                heartbeats.add(vhb);
                 heartbeatCount++;
-                logger.info(E.CHECK + E.CHECK + " heartbeat added. "
-                        + E.DICE + " " + vh.getVehicleReg()
-                        + " " + vh.getCreated() + E.RED_APPLE + " index: " + num
-                        + " owner: " + vh.getOwnerName() + " " + E.RED_APPLE
-                        + " heartbeatCount: " + heartbeatCount + " created: " + vh.getCreated());
+                logger.info(E.HEART_BLUE + E.HEART_BLUE + E.HEART_BLUE + E.HEART_BLUE
+                        + " heartbeat added. "
+                        + E.RED_CAR + " " + heartbeat.getVehicleReg()
+                        + " " + heartbeat.getCreated() + E.RED_APPLE + " index: " + routePointIndex
+                        + " owner: " + heartbeat.getOwnerName() + " " + E.RED_APPLE
+                        + " heartbeatCount so far: " + heartbeatCount + " created: " + heartbeat.getCreated());
                 //
                 int addMin = random.nextInt(20);
                 if (addMin == 0) {
@@ -180,23 +179,122 @@ public class VehicleService {
         return heartbeats;
     }
 
-    List<Integer> getSortedIndices(List<RoutePoint> points) {
-        List<Integer> indices = new ArrayList<>();
-        int count = random.nextInt(7);
-        if (count < 2) {
-            count = 5;
+    public List<VehicleHeartbeat> generateRouteHeartbeats(String routeId, int numberOfCars,
+                                                          int intervalInSeconds) {
+        logger.info(E.BLUE_DOT + " generateRouteHeartbeats starting for route " + routeId + " cars: " + numberOfCars+ E.FERN);
+
+        Route route = null;
+        List<Route> routes = routeRepository.findByRouteId(routeId);
+        if (routes.isEmpty()) {
+            return new ArrayList<>();
         }
+        route = routes.get(0);
+        List<Vehicle> all = vehicleRepository.findByAssociationId(route.getAssociationId());
+        logger.info(E.BLUE_DOT + " found " + all.size()
+                + " cars for association: " + route.getAssociationName() + " ----- " + E.RED_DOT + E.RED_DOT);
+
+        List<VehicleHeartbeat> heartbeats = new ArrayList<>();
+        List<Vehicle> vehicleList = getCars(all, numberOfCars);
+
+        logger.info(E.BLUE_DOT + " processing " + vehicleList.size()
+                + " cars for heartbeat generation ...");
+        int heartbeatCount = 0;
+
+        List<RoutePoint> points = new ArrayList<>();
+        boolean stop = false;
+        int index = 0;
+        while (!stop) {
+            List<RoutePoint> list = routeService.getRoutePoints(routeId, index);
+            if (list.isEmpty()) {
+                stop = true;
+            } else {
+                points.addAll(list);
+            }
+            index++;
+        }
+
+        logger.info("\n\n" + E.BLUE_DOT + E.BLUE_DOT + E.BLUE_DOT + E.BLUE_DOT
+                + route.getName() + " will be used for "
+                + E.RED_APPLE + E.FERN);
+
+        for (Vehicle vehicle : vehicleList) {
+            //move car along the route - ascending by index
+            List<Integer> indices = getSortedIndices(points);
+            DateTime minutesAgo = DateTime.now().toDateTimeISO().minusMinutes(30);
+
+            logger.info(E.BLUE_DOT + E.BLUE_DOT + E.BLUE_DOT + E.BLUE_DOT
+                    + route.getName() + " will be used for "
+                    + vehicle.getVehicleReg() + E.RED_APPLE + " starting at: " + minutesAgo +
+                    " number of heartbeats to generate on route: " + E.FERN + " " + indices.size());
+
+            for (Integer routePointIndex : indices) {
+                RoutePoint rp = points.get(routePointIndex);
+                VehicleHeartbeat heartbeat = getVehicleHeartbeat(vehicle, minutesAgo, rp);
+                VehicleHeartbeat addedVehicleHeartbeat = heartbeatService.addVehicleHeartbeat(heartbeat);
+                heartbeats.add(addedVehicleHeartbeat);
+
+                heartbeatCount++;
+                logger.info(E.HEART_BLUE + E.HEART_BLUE + E.HEART_BLUE + E.HEART_BLUE
+                        + " heartbeat added. "
+                        + E.RED_CAR + " " + heartbeat.getVehicleReg()
+                        + " " + heartbeat.getCreated() + E.RED_APPLE + " index: " + routePointIndex
+                        + " owner: " + heartbeat.getOwnerName() + " " + E.RED_APPLE
+                        + " heartbeatCount so far: " + heartbeatCount + " created: " + heartbeat.getCreated());
+                //
+                int addMin = random.nextInt(20);
+                if (addMin == 0) {
+                    addMin = 5;
+                }
+                minutesAgo = minutesAgo.plusMinutes(addMin);
+                try {
+                    Thread.sleep(intervalInSeconds * 1000L);
+                } catch (InterruptedException e) {
+                    //ignore
+                }
+            }
+
+        }
+
+        return heartbeats;
+    }
+
+    public static VehicleHeartbeat getVehicleHeartbeat(Vehicle vehicle, DateTime minutesAgo, RoutePoint rp) {
+        VehicleHeartbeat vh = new VehicleHeartbeat();
+        vh.setVehicleId(vehicle.getVehicleId());
+        vh.setMake(vehicle.getMake());
+        vh.setModel(vehicle.getModel());
+        vh.setCreated(minutesAgo.toString());
+        vh.setAssociationId(vehicle.getAssociationId());
+        vh.setPosition(rp.getPosition());
+        vh.setOwnerId(vehicle.getOwnerId());
+        vh.setOwnerName(vehicle.getOwnerName());
+        vh.setVehicleReg(vehicle.getVehicleReg());
+        vh.setLongDate(minutesAgo.getMillis());
+        vh.setVehicleHeartbeatId(UUID.randomUUID().toString());
+        return vh;
+    }
+
+    List<Integer> getSortedIndices(List<RoutePoint> points) {
+        int count = random.nextInt(20);
+        if (count < 5) {
+            count = 10;
+        }
+        if (points.isEmpty()) {
+            return new ArrayList<>();
+        }
+        HashMap<Integer, Integer> indexMap = new HashMap<>();
         for (int i = 0; i < count; i++) {
             int index = random.nextInt(points.size() - 1);
-            indices.add(index);
+            indexMap.put(index, index);
         }
+        List<Integer> indices = new ArrayList<>(indexMap.values().stream().toList());
         Collections.sort(indices);
         return indices;
     }
 
-    List<RoutePoint> getPoints(Route route) {
-        Criteria ownerCriteria = Criteria.where("routeId").is(route.getRouteId());
-        Query query = new Query(ownerCriteria).with(Sort.by("index"));
+    public List<RoutePoint> getPoints(Route route) {
+        Criteria routeCriteria = Criteria.where("routeId").is(route.getRouteId());
+        Query query = new Query(routeCriteria).with(Sort.by("index"));
 
         List<RoutePoint> list = mongoTemplate.find(query, RoutePoint.class);
         logger.info(E.RED_APPLE + " .... Points found for " + route.getName()

@@ -932,7 +932,23 @@ public class DataController {
         }
 
     }
+    @GetMapping("/generateRouteHeartbeats")
+    public ResponseEntity<Object> generateRouteHeartbeats(@RequestParam String routeId,
+                                                     @RequestParam int numberOfCars,
+                                                     @RequestParam int intervalInSeconds) {
+        try {
 
+            List<VehicleHeartbeat> m = vehicleService.generateRouteHeartbeats(
+                    routeId, numberOfCars, intervalInSeconds);
+            return ResponseEntity.ok(m);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "generateRouteHeartbeats failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+
+    }
     @GetMapping("/generateCommuterRequests")
     public ResponseEntity<Object> generateCommuterRequests(
             @RequestParam String associationId,

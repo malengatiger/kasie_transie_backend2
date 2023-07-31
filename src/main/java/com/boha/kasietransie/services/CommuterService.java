@@ -77,6 +77,7 @@ public class CommuterService {
         Query query = new Query(c).with(Sort.by("dateRequested").descending());
         return mongoTemplate.find(query, CommuterRequest.class);
     }
+
     public Commuter createCommuter(Commuter commuter) throws Exception {
         logger.info("\uD83E\uDDE1\uD83E\uDDE1 create commuter : " + gson.toJson(commuter));
         FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
@@ -206,17 +207,19 @@ public class CommuterService {
             c.setCommuterId(UUID.randomUUID().toString());
             c.setEmail("commuter_" + System.currentTimeMillis() + "@.kasietransie.com");
             c.setDateRegistered(DateTime.now().toDateTimeISO().toString());
-            c.setName("FakeCommuter_"+System.currentTimeMillis());
+            c.setName("FakeCommuter_" + System.currentTimeMillis());
             Commuter cx = commuterRepository.insert(c);
             list.add(cx);
         }
-        logger.info(E.BLUE_DOT+E.BLUE_BIRD+" commuters generated: " + list.size());
+        logger.info(E.BLUE_DOT + E.BLUE_BIRD + " commuters generated: " + list.size());
         return list;
     }
+
     public List<CommuterRequest> generateRouteCommuterRequests(
             String routeId, int intervalInSeconds, int numberOfCommuters) {
+        logger.info(E.HAND2 + E.HAND2 + E.HAND2 + " generateRouteCommuterRequests  ...");
 
-        Route route =  null;
+        Route route = null;
         List<Route> routes = routeRepository.findByRouteId(routeId);
         if (!routes.isEmpty()) {
             route = routes.get(0);
@@ -226,8 +229,6 @@ public class CommuterService {
         }
 
         List<Commuter> commuters = commuterRepository.findAll();
-        commuters.addAll(generateCommuters(numberOfCommuters));
-
         List<CommuterRequest> commuterRequests = new ArrayList<>();
         logger.info(E.BLUE_DOT + " commuters in play: " + commuters.size() + " commuters ...");
 
@@ -236,50 +237,55 @@ public class CommuterService {
         Query query = new Query(c).with(Sort.by("index"));
         List<RouteLandmark> routeLandmarks = mongoTemplate.find(query, RouteLandmark.class);
 
-        for (Commuter commuter : commuters) {
-            int landmarkIndex = random.nextInt(routeLandmarks.size() - 1);
-            RouteLandmark mark = routeLandmarks.get(landmarkIndex);
-            int passengers = random.nextInt(16);
-            if (passengers == 0) passengers = 1;
-            CommuterRequest cr = new CommuterRequest();
-            cr.setCommuterRequestId(UUID.randomUUID().toString());
-            cr.setCommuterId(commuter.getCommuterId());
-            cr.setDateRequested(minutesAgo.toString());
-            cr.setAssociationId(mark.getAssociationId());
-            cr.setCurrentPosition(mark.getPosition());
-            cr.setRouteId(mark.getRouteId());
-            cr.setRouteName(mark.getRouteName());
-            cr.setNumberOfPassengers(passengers);
-            cr.setRouteLandmarkId(mark.getLandmarkId());
-            cr.setRouteLandmarkName(mark.getLandmarkName());
-            cr.setDestinationCityId(route.getRouteStartEnd().getEndCityId());
-            cr.setDestinationCityName(route.getRouteStartEnd().getEndCityName());
-            cr.setOriginCityId(route.getRouteStartEnd().getStartCityId());
-            cr.setOriginCityName(route.getRouteStartEnd().getStartCityName());
-            cr.setNumberOfPassengers(passengers);
-            //
-            CommuterRequest request = addCommuterRequest(cr);
-            commuterRequests.add(request);
-            //
-            int addMin = random.nextInt(10);
-            if (addMin == 0) {
-                addMin = 1;
-            }
-            minutesAgo = minutesAgo.plusMinutes(addMin);
-            try {
-                Thread.sleep(intervalInSeconds * 1000L);
-            } catch (InterruptedException e) {
-                //ignore
+        for (int i = 0; i < numberOfCommuters; i++) {
+            for (Commuter commuter : commuters) {
+                int landmarkIndex = random.nextInt(routeLandmarks.size() - 1);
+                RouteLandmark mark = routeLandmarks.get(landmarkIndex);
+                int passengers = random.nextInt(16);
+                if (passengers == 0) passengers = 1;
+                CommuterRequest cr = new CommuterRequest();
+                cr.setCommuterRequestId(UUID.randomUUID().toString());
+                cr.setCommuterId(commuter.getCommuterId());
+                cr.setDateRequested(minutesAgo.toString());
+                cr.setAssociationId(mark.getAssociationId());
+                cr.setCurrentPosition(mark.getPosition());
+                cr.setRouteId(mark.getRouteId());
+                cr.setRouteName(mark.getRouteName());
+                cr.setNumberOfPassengers(passengers);
+                cr.setRouteLandmarkId(mark.getLandmarkId());
+                cr.setRouteLandmarkName(mark.getLandmarkName());
+                cr.setDestinationCityId(route.getRouteStartEnd().getEndCityId());
+                cr.setDestinationCityName(route.getRouteStartEnd().getEndCityName());
+                cr.setOriginCityId(route.getRouteStartEnd().getStartCityId());
+                cr.setOriginCityName(route.getRouteStartEnd().getStartCityName());
+                cr.setNumberOfPassengers(passengers);
+                //
+                CommuterRequest request = addCommuterRequest(cr);
+                commuterRequests.add(request);
+                //
+                int addMin = random.nextInt(10);
+                if (addMin == 0) {
+                    addMin = 1;
+                }
+                minutesAgo = minutesAgo.plusMinutes(addMin);
+                try {
+                    Thread.sleep(intervalInSeconds * 1000L);
+                } catch (InterruptedException e) {
+                    //ignore
+                }
             }
         }
-        logger.info(E.LEAF + E.LEAF + " commuter request added: "
+
+        logger.info(E.LEAF + E.LEAF + " commuter requests added: "
                 + " route: " + route.getName() + " at: " + commuterRequests.size() + " requests generated"
-                + " " + E.FLOWER_RED );
+                + " " + E.FLOWER_RED);
         return commuterRequests;
     }
+
     public List<CommuterRequest> generateCommuterRequests(
             String associationId, int intervalInSeconds, int numberOfCommuters) {
 
+        List<CommuterRequest> commuterRequests = new ArrayList<>();
         List<Route> routes = routeService.getAssociationRoutes(associationId);
         List<Route> filteredRoutes = new ArrayList<>();
         for (Route route : routes) {
@@ -289,63 +295,14 @@ public class CommuterService {
                 filteredRoutes.add(route);
             }
         }
-
-        List<Commuter> commuters = commuterRepository.findAll();
-        commuters.addAll(generateCommuters(numberOfCommuters));
-
-        List<CommuterRequest> commuterRequests = new ArrayList<>();
-        logger.info(E.BLUE_DOT + " routes in play: " + filteredRoutes.size() + " routes ...");
-        logger.info(E.BLUE_DOT + " commuters in play: " + commuters.size() + " commuters ...");
-
-        DateTime minutesAgo = DateTime.now().toDateTimeISO().minusHours(1);
-        int index = random.nextInt(filteredRoutes.size() - 1);
-        Route route = filteredRoutes.get(index);
-        Criteria c = Criteria.where("routeId").is(route.getRouteId());
-        Query query = new Query(c).with(Sort.by("index"));
-        List<RouteLandmark> marks = mongoTemplate.find(query, RouteLandmark.class);
-
-
-        for (Commuter commuter : commuters) {
-            int landmarkIndex = random.nextInt(marks.size() - 1);
-            RouteLandmark mark = marks.get(landmarkIndex);
-            int passengers = random.nextInt(16);
-            if (passengers == 0) passengers = 1;
-            CommuterRequest cr = new CommuterRequest();
-            cr.setCommuterRequestId(UUID.randomUUID().toString());
-            cr.setCommuterId(commuter.getCommuterId());
-            cr.setDateRequested(minutesAgo.toString());
-            cr.setAssociationId(mark.getAssociationId());
-            cr.setCurrentPosition(mark.getPosition());
-            cr.setRouteId(mark.getRouteId());
-            cr.setRouteName(mark.getRouteName());
-            cr.setNumberOfPassengers(passengers);
-            cr.setRouteLandmarkId(mark.getLandmarkId());
-            cr.setRouteLandmarkName(mark.getLandmarkName());
-            cr.setDestinationCityId(route.getRouteStartEnd().getEndCityId());
-            cr.setDestinationCityName(route.getRouteStartEnd().getEndCityName());
-            cr.setOriginCityId(route.getRouteStartEnd().getStartCityId());
-            cr.setOriginCityName(route.getRouteStartEnd().getStartCityName());
-            cr.setNumberOfPassengers(passengers);
-            //
-            CommuterRequest request = addCommuterRequest(cr);
-            commuterRequests.add(request);
-            //
-            int addMin = random.nextInt(5);
-            if (addMin == 0) {
-                addMin = 1;
-            }
-            minutesAgo = minutesAgo.plusMinutes(addMin);
-            try {
-                Thread.sleep(intervalInSeconds * 1000L);
-            } catch (InterruptedException e) {
-                //ignore
-            }
-            //
-            logger.info(E.LEAF + E.LEAF + " commuter request added: " + cr.getRouteLandmarkName()
-                    + " route: " + cr.getRouteName() + " at: " + cr.getDateRequested()
-                     + " " + E.BLUE_BIRD );
-
+        for (Route route : filteredRoutes) {
+            List<CommuterRequest> list = generateRouteCommuterRequests(route.getRouteId(), intervalInSeconds, numberOfCommuters);
+            commuterRequests.addAll(list);
         }
+
+        //
+        logger.info(E.LEAF + E.LEAF + " commuter requests added: " + commuterRequests.size()
+                + " " + E.BLUE_BIRD);
 
         return commuterRequests;
     }

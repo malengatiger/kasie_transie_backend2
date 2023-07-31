@@ -16,7 +16,6 @@ import static org.springframework.data.mongodb.core.query.Query.query;
 @Service
 public class HeartbeatService {
 
-
     private final HeartbeatRepository heartbeatRepository;
     private final MongoTemplate mongoTemplate;
     final MessagingService messagingService;

@@ -91,6 +91,7 @@ public class AmbassadorService {
         Query query = new Query(c);
         return mongoTemplate.find(query, AmbassadorPassengerCount.class);
     }
+
     public List<AmbassadorPassengerCount> getRoutePassengerCounts(String routeId, String startDate) {
         Criteria c = Criteria.where("routeId").is(routeId)
                 .and("created").gte(startDate);
@@ -121,17 +122,7 @@ public class AmbassadorService {
 
     public List<AmbassadorPassengerCount> generateRoutePassengerCounts(
             String routeId, int numberOfCars, int intervalInSeconds) {
-        List<Vehicle> all = vehicleRepository.findByAssociationId(routeId);
-        logger.info(E.BLUE_DOT + " found " + all.size()
-                + " cars for route: " + routeId + " ----- " + E.RED_DOT + E.RED_DOT);
 
-        List<Vehicle> vehicleList = getCars(all, numberOfCars);
-        logger.info(E.BLUE_DOT + " processing " + vehicleList.size()
-                + " cars for passengerCount generation ...");
-        for (Vehicle vehicle : vehicleList) {
-            logger.info(E.OK+E.OK+" vehicle included: " + E.RED_APPLE + vehicle.getVehicleReg()
-                    + " " + E.FLOWER_RED + " owner: " + vehicle.getOwnerName());
-        }
         Route route = null;
         List<Route> routes = routeRepository.findByRouteId(routeId);
         if (!routes.isEmpty()) {
@@ -139,6 +130,17 @@ public class AmbassadorService {
         }
         if (route == null) {
             return new ArrayList<>();
+        }
+        List<Vehicle> all = vehicleRepository.findByAssociationId(route.getAssociationId());
+        logger.info(E.BLUE_DOT + " found " + all.size()
+                + " cars for route: " + routeId + " ----- " + E.RED_DOT + E.RED_DOT);
+
+        List<Vehicle> vehicleList = getCars(all, numberOfCars);
+        logger.info(E.BLUE_DOT + " processing " + vehicleList.size()
+                + " cars for passengerCount generation ...");
+        for (Vehicle vehicle : vehicleList) {
+            logger.info(E.OK + E.OK + " vehicle included: " + E.RED_APPLE + vehicle.getVehicleReg()
+                    + " " + E.FLOWER_RED + " owner: " + vehicle.getOwnerName());
         }
         List<User> users = userRepository.findByAssociationId(route.getAssociationId());
         Criteria c = Criteria.where("routeId").is(routeId);
@@ -176,6 +178,7 @@ public class AmbassadorService {
 
         return passengerCounts;
     }
+
     public List<AmbassadorPassengerCount> generateAmbassadorPassengerCounts(
             String associationId, int numberOfCars, int intervalInSeconds) {
         List<Vehicle> all = vehicleRepository.findByAssociationId(associationId);
@@ -188,7 +191,7 @@ public class AmbassadorService {
         logger.info(E.BLUE_DOT + " processing " + vehicleList.size()
                 + " cars for passengerCount generation ...");
         for (Vehicle vehicle : vehicleList) {
-            logger.info(E.OK+E.OK+" vehicle included: " + E.RED_APPLE + vehicle.getVehicleReg()
+            logger.info(E.OK + E.OK + " vehicle included: " + E.RED_APPLE + vehicle.getVehicleReg()
                     + " " + E.FLOWER_RED + " owner: " + vehicle.getOwnerName());
         }
         List<Route> routes = routeService.getAssociationRoutes(associationId);
@@ -243,13 +246,13 @@ public class AmbassadorService {
         return passengerCounts;
     }
 
-    private AmbassadorPassengerCount getAmbassadorPassengerCount(List<User> users,
-                                                                 List<AmbassadorPassengerCount> passengerCounts,
-                                                                 Vehicle vehicle, List<RouteLandmark> marks,
-                                                                 DateTime minutesAgo,
-                                                                 int landmarkIndex,
-                                                                 AmbassadorPassengerCount previousAPC,
-                                                                 RouteLandmark mark) {
+    public AmbassadorPassengerCount getAmbassadorPassengerCount(List<User> users,
+                                                                List<AmbassadorPassengerCount> passengerCounts,
+                                                                Vehicle vehicle, List<RouteLandmark> marks,
+                                                                DateTime minutesAgo,
+                                                                int landmarkIndex,
+                                                                AmbassadorPassengerCount previousAPC,
+                                                                RouteLandmark mark) {
         int userIndex = random.nextInt(users.size() - 1);
         User user = users.get(userIndex);
         int initialPassengers = random.nextInt(20);
@@ -279,15 +282,20 @@ public class AmbassadorService {
             apc.setPassengersIn(passengersIn);
             int passengersOut = random.nextInt(6);
             apc.setPassengersOut(passengersOut);
-            int count = getCurrentPassengers(apc.getPassengersIn(), apc.getPassengersOut(),
-                    previousAPC.getCurrentPassengers());
-            apc.setCurrentPassengers(count);
+            if (previousAPC != null) {
+                int count = getCurrentPassengers(apc.getPassengersIn(), apc.getPassengersOut(),
+                        previousAPC.getCurrentPassengers());
+                apc.setCurrentPassengers(count);
+            } else {
+                apc.setCurrentPassengers(initialPassengers);
+            }
         }
         if (landmarkIndex == marks.size() - 1) {
             apc.setPassengersIn(0);
-            assert previousAPC != null;
-            apc.setPassengersOut(previousAPC.getCurrentPassengers());
-            apc.setCurrentPassengers(0);
+            if (previousAPC != null) {
+                apc.setPassengersOut(previousAPC.getCurrentPassengers());
+                apc.setCurrentPassengers(0);
+            }
         }
         AmbassadorPassengerCount pc = addAmbassadorPassengerCount(apc);
         passengerCounts.add(pc);

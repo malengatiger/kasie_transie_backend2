@@ -24,4 +24,7 @@ public class AppError {
     String iosSystemName;
     String userUrl;
     String uploadedDate;
+
+    String vehicleId;
+    String vehicleReg;
 }

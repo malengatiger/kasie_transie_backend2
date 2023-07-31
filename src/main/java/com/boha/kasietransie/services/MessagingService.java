@@ -21,7 +21,8 @@ public class MessagingService {
     VehicleRepository vehicleRepository;
     private static final Logger LOGGER = LoggerFactory.getLogger(MessagingService.class.getSimpleName());
     private static final Gson G = new GsonBuilder().setPrettyPrinting().create();
-    private static String MM = E.PANDA + E.PANDA + E.PANDA + " MessagingService " + E.RED_APPLE;
+    private static final String MM = E.GLOBE + E.GLOBE + E.GLOBE +  E.GLOBE + E.GLOBE + E.GLOBE +
+            " MessagingService " + E.RED_APPLE;
 
     public void sendMessage(VehicleArrival vehicleArrival) {
         try {
@@ -34,8 +35,8 @@ public class MessagingService {
             Message message = buildMessage(Constants.vehicleArrival, topic,
                     G.toJson(vehicleArrival), notification);
             FirebaseMessaging.getInstance().send(message);
-//            LOGGER.info(MM + "VehicleArrival message sent via FCM " + vehicleArrival.getVehicleReg()
-//                    + " at " + vehicleArrival.getLandmarkName());
+            LOGGER.info(MM + "VehicleArrival message sent via FCM " + vehicleArrival.getVehicleReg()
+                    + " at " + vehicleArrival.getLandmarkName());
         } catch (Exception e) {
             LOGGER.error("Failed to send vehicleArrival FCM message");
             e.printStackTrace();
@@ -72,7 +73,8 @@ public class MessagingService {
             Message message = buildMessage(Constants.locationRequest, topic,
                     G.toJson(locationRequest), notification);
             FirebaseMessaging.getInstance().send(message);
-//            LOGGER.info(MM + "LocationRequest message sent via FCM: " + G.toJson(locationRequest));
+            LOGGER.info(MM + "LocationRequest message sent via FCM: " +  " topic: " + topic + " "
+                    + G.toJson(locationRequest));
 
         } catch (Exception e) {
             LOGGER.error("Failed to send locationRequest FCM message");
@@ -87,7 +89,8 @@ public class MessagingService {
             Message message = buildMessage(Constants.heartbeat, topic,
                     G.toJson(heartbeat));
             FirebaseMessaging.getInstance().send(message);
-//            LOGGER.info(MM + "VehicleHeartbeat message sent via FCM: " + heartbeat.getVehicleReg());
+            LOGGER.info(MM + "VehicleHeartbeat message sent via FCM: " + heartbeat.getVehicleReg()
+            + " topic: " + topic);
 
         } catch (Exception e) {
             LOGGER.error("Failed to send VehicleHeartbeat FCM message");
@@ -106,7 +109,8 @@ public class MessagingService {
             Message message = buildMessage(Constants.locationResponse, topic,
                     G.toJson(locationResponse), notification);
             FirebaseMessaging.getInstance().send(message);
-//            LOGGER.info(MM + "LocationResponse message sent via FCM: " + G.toJson(locationResponse));
+            LOGGER.info(MM + "LocationResponse message sent via FCM: " + " topic: " + topic + " "
+                    + G.toJson(locationResponse));
 
         } catch (Exception e) {
             LOGGER.error("Failed to send locationResponse FCM message");
