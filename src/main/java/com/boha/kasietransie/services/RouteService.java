@@ -103,18 +103,13 @@ public class RouteService {
             BufferedImage img = MatrixToImageWriter.toBufferedImage(bitMatrix);
 
             String id = route.getRouteId().replace(" ", "");
-            Path path = Path.of("qrcodes/qrcode_" + id
-                    + "_" + System.currentTimeMillis() + ".png");
 
-            String p = "qrcodes/qrcode_" + id
-                    + "_" + System.currentTimeMillis() + ".png";
-            File file = new File(p);
+            File file = CommuterService.getQRCodeFile(id);
             ImageIO.write(img, "png", file);
-            logger.info(E.COFFEE + "File created and qrCode ready for uploading");
             String url = cloudStorageUploaderService.uploadFile(file.getName(), file);
             route.setQrCodeUrl(url);
 
-            boolean delete = Files.deleteIfExists(path);
+            boolean delete = Files.deleteIfExists(file.toPath());
             logger.info(E.LEAF + E.LEAF + E.LEAF +
                     " QRCode generated, url: " + url + " for route: " + gson.toJson(route)
                     + E.RED_APPLE + " - temp file deleted: " + delete);

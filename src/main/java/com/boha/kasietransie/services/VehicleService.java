@@ -447,18 +447,13 @@ public class VehicleService {
 
             String reg = car.getVehicleReg().replace(" ", "");
 
-            Path path = Path.of("qrcodes/qrcode_" + reg
-                    + "_" + System.currentTimeMillis() + ".png");
-
-            String p = "qrcodes/qrcode_" + reg
-                    + "_" + System.currentTimeMillis() + ".png";
-            File file = new File(p);
+            File file = CommuterService.getQRCodeFile(reg);
             ImageIO.write(img, "png", file);
             logger.info(E.COFFEE + "File created and qrCode ready for uploading");
             String url = cloudStorageUploaderService.uploadFile(file.getName(), file);
             car.setQrCodeUrl(url);
 
-            boolean delete = Files.deleteIfExists(path);
+            boolean delete = Files.deleteIfExists(file.toPath());
             logger.info(E.LEAF + E.LEAF + E.LEAF +
                     " QRCode generated, url: " + url + " for car: " + gson.toJson(car)
                     + E.RED_APPLE + " - temp file deleted: " + delete);

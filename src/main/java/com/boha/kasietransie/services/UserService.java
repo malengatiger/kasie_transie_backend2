@@ -61,18 +61,13 @@ public class UserService {
 
             String reg = user.getUserId().replace(" ", "");
 
-            Path path = Path.of("qrcodes/qrcode_" + reg
-                    + "_" + System.currentTimeMillis() + ".png");
-
-            String p = "qrcodes/qrcode_" + reg
-                    + "_" + System.currentTimeMillis() + ".png";
-            File file = new File(p);
+            File file = CommuterService.getQRCodeFile(reg);
             ImageIO.write(img, "png", file);
             logger.info(E.COFFEE + "File created and qrCode ready for uploading");
             String url = cloudStorageUploaderService.uploadFile(file.getName(), file);
             user.setQrCodeUrl(url);
 
-            boolean delete = Files.deleteIfExists(path);
+            boolean delete = Files.deleteIfExists(file.toPath());
             logger.info(E.LEAF + E.LEAF + E.LEAF +
                     " QRCode generated, url: " + url + " for user: " + gson.toJson(user)
                     + E.RED_APPLE + " - temp file deleted: " + delete);
@@ -156,8 +151,8 @@ public class UserService {
             logger.info("\uD83E\uDDE1\uD83E\uDDE1 userRecord from Firebase : " + userRecord.getEmail());
             if (userRecord.getUid() != null) {
                 String uid = userRecord.getUid();
-                createUserQRCode(user);
                 user.setUserId(uid);
+                createUserQRCode(user);
                 user.setPassword(null);
 
                 userRepository.insert(user);

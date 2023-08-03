@@ -3,6 +3,7 @@ package com.boha.kasietransie.controllers;
 import com.boha.kasietransie.data.BigBag;
 import com.boha.kasietransie.data.CounterBag;
 import com.boha.kasietransie.data.RouteBag;
+import com.boha.kasietransie.data.VehicleBag;
 import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.services.*;
 import com.boha.kasietransie.util.CustomErrorResponse;
@@ -540,6 +541,21 @@ public class ListController {
             return ResponseEntity.badRequest().body(
                     new CustomErrorResponse(400,
                             "getVehicleCountsByDate failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+    }
+
+    @GetMapping("/getVehicleBag")
+    public ResponseEntity<Object> getVehicleBag(
+            @RequestParam String vehicleId, @RequestParam String startDate) {
+        try {
+           VehicleBag ass = dispatchService
+                    .getVehicleBag(vehicleId, startDate);
+            return ResponseEntity.ok(ass);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "getVehicleBag failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
     }

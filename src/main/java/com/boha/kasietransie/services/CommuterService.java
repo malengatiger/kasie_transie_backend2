@@ -25,7 +25,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -153,26 +152,13 @@ public class CommuterService {
 
             String reg = commuter.getCommuterId().replace(" ", "");
 
-            File tmpDir = new File("qrcodes");
-            if (!tmpDir.isDirectory()) {
-                try {
-                    Files.createDirectory(tmpDir.toPath());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            Path path = Path.of("qrcodes/qrcode_" + reg
-                    + "_" + System.currentTimeMillis() + ".png");
-
-            String p = "qrcodes/qrcode_" + reg
-                    + "_" + System.currentTimeMillis() + ".png";
-            File file = new File(p);
+            File file = getQRCodeFile(reg);
             ImageIO.write(img, "png", file);
             logger.info(E.COFFEE + "File created and qrCode ready for uploading");
             String url = cloudStorageUploaderService.uploadFile(file.getName(), file);
             commuter.setQrCodeUrl(url);
 
-            boolean delete = Files.deleteIfExists(path);
+            boolean delete = Files.deleteIfExists(file.toPath());
             logger.info(E.LEAF + E.LEAF + E.LEAF +
                     " QRCode generated, url: " + url + " for commuter: "
                     + E.RED_APPLE + " - temp file deleted: " + delete);
@@ -180,6 +166,20 @@ public class CommuterService {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+    }
+
+    public static File getQRCodeFile(String identifier) {
+        File tmpDir = new File("qrcodes");
+        if (!tmpDir.isDirectory()) {
+            try {
+                Files.createDirectory(tmpDir.toPath());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        String p = "qrcodes/qrcode_" + identifier
+                + "_" + System.currentTimeMillis() + ".png";
+        return new File(p);
     }
 
     public Commuter addCommuter(Commuter commuter) throws Exception {
@@ -248,7 +248,7 @@ public class CommuterService {
                 cr.setCommuterId(commuter.getCommuterId());
                 cr.setDateRequested(minutesAgo.toString());
                 cr.setAssociationId(mark.getAssociationId());
-                cr.setCurrentPosition(mark.getPosition());
+                cr.setCurrentPosition(getRandomPosition(mark.getPosition()));
                 cr.setRouteId(mark.getRouteId());
                 cr.setRouteName(mark.getRouteName());
                 cr.setNumberOfPassengers(passengers);
@@ -263,7 +263,7 @@ public class CommuterService {
                 CommuterRequest request = addCommuterRequest(cr);
                 commuterRequests.add(request);
                 //
-                int addMin = random.nextInt(10);
+                int addMin = random.nextInt(5);
                 if (addMin == 0) {
                     addMin = 1;
                 }
@@ -282,6 +282,33 @@ public class CommuterService {
         return commuterRequests;
     }
 
+    public Position getRandomPosition(Position pos) {
+        int latDistance = random.nextInt(5000);
+        if (latDistance < 500) latDistance = 2000;
+        int lngDistance = random.nextInt(5000);
+        if (lngDistance < 500) lngDistance = 1500;
+
+        double lat = getCoordinateWithOffset(pos.getCoordinates().get(1),latDistance);
+        double lng = getCoordinateWithOffset(pos.getCoordinates().get(0),lngDistance);
+
+        List<Double> coords = new ArrayList<>();
+        coords.add(lng);
+        coords.add(lat);
+
+        Position p = new Position();
+        p.setCoordinates(coords);
+        p.setType("Point");
+
+        return p;
+    }
+    private double getCoordinateWithOffset(double coordinate, double offsetInMeters) {
+        double earthRadius = 6371000.0; // Earth's radius in meters
+        double coordRad = toRadians(coordinate);
+        double distanceRad = offsetInMeters / earthRadius;
+
+        double newCoordinate = coordRad + distanceRad;
+        return toDegrees(newCoordinate);
+    }
     public List<CommuterRequest> generateCommuterRequests(
             String associationId, int intervalInSeconds, int numberOfCommuters) {
 
@@ -305,5 +332,14 @@ public class CommuterService {
                 + " " + E.BLUE_BIRD);
 
         return commuterRequests;
+    }
+
+    private double toRadians(double degree) {
+        return degree * Math.PI / 180.0;
+    }
+
+    // Helper method to convert radians to degrees
+    private double toDegrees(double radian) {
+        return radian * 180.0 / Math.PI;
     }
 }

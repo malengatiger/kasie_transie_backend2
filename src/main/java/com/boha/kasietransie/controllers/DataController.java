@@ -1,5 +1,6 @@
 package com.boha.kasietransie.controllers;
 
+import com.boha.kasietransie.data.AppErrors;
 import com.boha.kasietransie.data.CalculatedDistanceList;
 import com.boha.kasietransie.data.DispatchRecordList;
 import com.boha.kasietransie.data.TranslationInput;
@@ -416,6 +417,20 @@ public class DataController {
 
     }
 
+    @PostMapping("/addAppErrors")
+    public ResponseEntity<Object> addAppErrors(@RequestBody AppErrors appErrors) {
+
+        try {
+            List<AppError> v = associationService.addAppErrors(appErrors);
+            return ResponseEntity.ok(v);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomErrorResponse(400,
+                            "addAppErrors failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+
+    }
 
     @PostMapping("/registerAssociation")
     public ResponseEntity<Object> registerAssociation(@RequestBody Association association) {

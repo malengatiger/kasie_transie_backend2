@@ -1,5 +1,6 @@
 package com.boha.kasietransie.services;
 
+import com.boha.kasietransie.data.AppErrors;
 import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.data.repos.*;
 import com.boha.kasietransie.util.Constants;
@@ -157,6 +158,9 @@ public class AssociationService {
 
     public AppError addAppError(AppError error) {
         return appErrorRepository.insert(error);
+    }
+    public List<AppError> addAppErrors(AppErrors errors) {
+        return appErrorRepository.insert(errors.getAppErrorList());
     }
 
     public List<AppError> getAssociationAppErrors(String associationId) {
