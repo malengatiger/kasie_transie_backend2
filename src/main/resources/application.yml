@@ -5,6 +5,8 @@ cloudStorageDirectory: kasieMedia
 email: bryangrant217x@gmail.com
 requestsPerSecond: 10
 spring:
+    main:
+        allow-circular-references: true
     mail:
         host: smtp.gmail.com
         password: khaya#3HasACat

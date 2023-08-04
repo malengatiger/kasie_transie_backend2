@@ -13,6 +13,7 @@ import com.google.zxing.WriterException;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
+import lombok.RequiredArgsConstructor;
 import org.joda.time.DateTime;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -27,7 +28,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
-
+//
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -42,7 +43,10 @@ import java.util.logging.Logger;
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 import static org.springframework.data.mongodb.core.query.Query.query;
 
+
 @Service
+@RequiredArgsConstructor
+
 public class VehicleService {
 
     private final VehicleRepository vehicleRepository;
@@ -66,26 +70,9 @@ public class VehicleService {
 
     private static final String MM = "\uD83D\uDC26\uD83D\uDC26\uD83D\uDC26\uD83D\uDC26\uD83D\uDC26\uD83D\uDC26\uD83D\uDC26";
 
-    public VehicleService(VehicleRepository vehicleRepository,
-                          VehicleHeartbeatRepository vehicleHeartbeatRepository,
-                          AssociationRepository associationRepository,
-                          ResourceLoader resourceLoader, UserRepository userRepository, UserService userService, HeartbeatService heartbeatService, CloudStorageUploaderService cloudStorageUploaderService, MongoTemplate mongoTemplate, MessagingService messagingService, RouteService routeService, RouteRepository routeRepository) {
-        this.vehicleRepository = vehicleRepository;
-        this.vehicleHeartbeatRepository = vehicleHeartbeatRepository;
-        this.associationRepository = associationRepository;
-        this.resourceLoader = resourceLoader;
-        this.userRepository = userRepository;
-        this.userService = userService;
-        this.heartbeatService = heartbeatService;
-        this.cloudStorageUploaderService = cloudStorageUploaderService;
-        this.mongoTemplate = mongoTemplate;
-        this.messagingService = messagingService;
-        this.routeService = routeService;
-        this.routeRepository = routeRepository;
 
-        logger.info(MM + " VehicleService constructed and shit injected! ");
 
-    }
+
 
     Random random = new Random(System.currentTimeMillis());
 
@@ -183,7 +170,7 @@ public class VehicleService {
                                                           int intervalInSeconds) {
         logger.info(E.BLUE_DOT + " generateRouteHeartbeats starting for route " + routeId + " cars: " + numberOfCars+ E.FERN);
 
-        Route route = null;
+        Route route;
         List<Route> routes = routeRepository.findByRouteId(routeId);
         if (routes.isEmpty()) {
             return new ArrayList<>();
@@ -275,10 +262,17 @@ public class VehicleService {
     }
 
     List<Integer> getSortedIndices(List<RoutePoint> points) {
-        int count = random.nextInt(20);
-        if (count < 5) {
-            count = 10;
+        int bound = 5;
+        if (points.size() > 400) {
+            bound = 8;
+        } else {
+            bound = 4;
         }
+        int count = random.nextInt(bound);
+        if (count == 0) {
+            count = 2;
+        }
+
         if (points.isEmpty()) {
             return new ArrayList<>();
         }
@@ -293,7 +287,7 @@ public class VehicleService {
     }
 
     public List<RoutePoint> getPoints(Route route) {
-        Criteria routeCriteria = Criteria.where("routeId").is(route.getRouteId());
+        Criteria routeCriteria = where("routeId").is(route.getRouteId());
         Query query = new Query(routeCriteria).with(Sort.by("index"));
 
         List<RoutePoint> list = mongoTemplate.find(query, RoutePoint.class);
@@ -313,11 +307,11 @@ public class VehicleService {
 
         DateTime now = DateTime.now().toDateTimeISO().minusMinutes(minutes);
         String date = now.toString();
-        Criteria geoCriteria = Criteria.where("position").withinSphere(circle);
-        Criteria ownerCriteria = Criteria.where("ownerId").gte(userId);
-        Criteria dateCriteria = Criteria.where("created").gte(date);
+        Criteria geoCriteria = where("position").withinSphere(circle);
+        Criteria ownerCriteria = where("ownerId").gte(userId);
+        Criteria dateCriteria = where("created").gte(date);
 
-        Query query = Query.query(geoCriteria);
+        Query query = query(geoCriteria);
         query.addCriteria(ownerCriteria);
         query.addCriteria(dateCriteria);
 
@@ -337,11 +331,11 @@ public class VehicleService {
 
         DateTime now = DateTime.now().toDateTimeISO().minusMinutes(minutes);
         String date = now.toString();
-        Criteria geoCriteria = Criteria.where("position").withinSphere(circle);
-        Criteria associationCriteria = Criteria.where("associationId").gte(associationId);
-        Criteria dateCriteria = Criteria.where("created").gte(date);
+        Criteria geoCriteria = where("position").withinSphere(circle);
+        Criteria associationCriteria = where("associationId").gte(associationId);
+        Criteria dateCriteria = where("created").gte(date);
 
-        Query query = Query.query(geoCriteria);
+        Query query = query(geoCriteria);
         query.addCriteria(associationCriteria);
         query.addCriteria(dateCriteria);
 
@@ -709,7 +703,7 @@ public class VehicleService {
 
         String oldOwner = "Mr. Transportation III";
         Query query = new Query();
-        query.addCriteria(Criteria.where("ownerName").is(oldOwner));
+        query.addCriteria(where("ownerName").is(oldOwner));
 
         List<Vehicle> cars = mongoTemplate.find(query, Vehicle.class);
         logger.info(XX + " Number of cars: " + E.RED_DOT + cars.size());

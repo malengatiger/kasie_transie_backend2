@@ -1,6 +1,8 @@
 package com.boha.kasietransie.services;
 
 import com.boha.kasietransie.data.dto.*;
+import com.boha.kasietransie.data.repos.AppErrorRepository;
+import com.boha.kasietransie.data.repos.AssociationRepository;
 import com.boha.kasietransie.data.repos.VehicleRepository;
 import com.boha.kasietransie.util.Constants;
 import com.boha.kasietransie.util.E;
@@ -8,17 +10,20 @@ import com.google.firebase.messaging.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.RequiredArgsConstructor;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
 public class MessagingService {
 
-    VehicleRepository vehicleRepository;
+    final VehicleRepository vehicleRepository;
+    final AppErrorRepository appErrorRepository;
     private static final Logger LOGGER = LoggerFactory.getLogger(MessagingService.class.getSimpleName());
     private static final Gson G = new GsonBuilder().setPrettyPrinting().create();
     private static final String MM = E.GLOBE + E.GLOBE + E.GLOBE +  E.GLOBE + E.GLOBE + E.GLOBE +
@@ -35,11 +40,10 @@ public class MessagingService {
             Message message = buildMessage(Constants.vehicleArrival, topic,
                     G.toJson(vehicleArrival), notification);
             FirebaseMessaging.getInstance().send(message);
-            LOGGER.info(MM + "VehicleArrival message sent via FCM " + vehicleArrival.getVehicleReg()
-                    + " at " + vehicleArrival.getLandmarkName());
+
         } catch (Exception e) {
             LOGGER.error("Failed to send vehicleArrival FCM message");
-            e.printStackTrace();
+            sleepToCatchUp(e);
         }
     }
 
@@ -54,11 +58,10 @@ public class MessagingService {
             Message message = buildMessage(Constants.vehicleDeparture, topic,
                     G.toJson(vehicleDeparture), notification);
             FirebaseMessaging.getInstance().send(message);
-//            LOGGER.info(MM + "VehicleDeparture message sent via FCM " + G.toJson(vehicleDeparture));
 
         } catch (Exception e) {
             LOGGER.error("Failed to send vehicleDeparture FCM message");
-            e.printStackTrace();
+            sleepToCatchUp(e);
         }
     }
 
@@ -73,12 +76,10 @@ public class MessagingService {
             Message message = buildMessage(Constants.locationRequest, topic,
                     G.toJson(locationRequest), notification);
             FirebaseMessaging.getInstance().send(message);
-            LOGGER.info(MM + "LocationRequest message sent via FCM: " +  " topic: " + topic + " "
-                    + G.toJson(locationRequest));
 
         } catch (Exception e) {
             LOGGER.error("Failed to send locationRequest FCM message");
-            e.printStackTrace();
+            sleepToCatchUp(e);
         }
     }
 
@@ -89,12 +90,9 @@ public class MessagingService {
             Message message = buildMessage(Constants.heartbeat, topic,
                     G.toJson(heartbeat));
             FirebaseMessaging.getInstance().send(message);
-            LOGGER.info(MM + "VehicleHeartbeat message sent via FCM: " + heartbeat.getVehicleReg()
-            + " topic: " + topic);
-
         } catch (Exception e) {
             LOGGER.error("Failed to send VehicleHeartbeat FCM message");
-            e.printStackTrace();
+            sleepToCatchUp(e);
         }
     }
 
@@ -109,12 +107,10 @@ public class MessagingService {
             Message message = buildMessage(Constants.locationResponse, topic,
                     G.toJson(locationResponse), notification);
             FirebaseMessaging.getInstance().send(message);
-            LOGGER.info(MM + "LocationResponse message sent via FCM: " + " topic: " + topic + " "
-                    + G.toJson(locationResponse));
 
         } catch (Exception e) {
             LOGGER.error("Failed to send locationResponse FCM message");
-            e.printStackTrace();
+            sleepToCatchUp(e);
         }
     }
 
@@ -133,7 +129,7 @@ public class MessagingService {
 
         } catch (Exception e) {
             LOGGER.error("Failed to send userGeofenceEvent FCM message");
-            e.printStackTrace();
+            sleepToCatchUp(e);
         }
     }
 
@@ -148,11 +144,9 @@ public class MessagingService {
             Message message = buildMessage(Constants.routeUpdateRequest, topic,
                     G.toJson(routeUpdateRequest), notification);
             FirebaseMessaging.getInstance().send(message);
-//            LOGGER.info(E.RED_APPLE + "Route Update Message has been sent: \n associationId: "
-//                    + routeUpdateRequest.getAssociationId() + " routeId: " + routeUpdateRequest.getRouteName());
         } catch (Exception e) {
             LOGGER.error("Failed to send RouteUpdateMessage FCM message, routeId: " + routeUpdateRequest.getRouteId());
-            throw new Exception(e.getMessage());
+            sleepToCatchUp(e);
         }
     }
 
@@ -172,7 +166,7 @@ public class MessagingService {
 
         } catch (Exception e) {
             LOGGER.error("Failed to send VehicleUpdateMessage FCM message");
-            e.printStackTrace();
+            sleepToCatchUp(e);
         }
         return 0;
     }
@@ -192,7 +186,7 @@ public class MessagingService {
 
         } catch (Exception e) {
             LOGGER.error("Failed to send VehicleMediaMessage FCM message");
-            throw new Exception(e.getMessage());
+            sleepToCatchUp(e);
         }
         return 0;
     }
@@ -203,14 +197,28 @@ public class MessagingService {
             Message message = buildMessage(Constants.dispatchRecord, topic,
                     G.toJson(dispatchRecord));
             FirebaseMessaging.getInstance().send(message);
-//            LOGGER.info(MM + "DispatchRecord message sent via FCM: " + dispatchRecord.getLandmarkName());
 
         } catch (Exception e) {
             LOGGER.error("Failed to send dispatchRecord FCM message");
-            e.printStackTrace();
+            sleepToCatchUp(e);
         }
     }
 
+    private void sleepToCatchUp(Exception e) {
+        LOGGER.error(e.getMessage());
+        try {
+            AppError a = new AppError();
+            a.setCreated(DateTime.now().toDateTimeISO().toString());
+            a.setErrorMessage(E.RED_DOT+" FCM Error: " + e.getMessage());
+            a.setAppErrorId(UUID.randomUUID().toString());
+            a.setDeviceType("Backend MessagingService");
+            appErrorRepository.insert(a);
+            LOGGER.info(".... zzzzzzzz .... sleeping for 10 seconds to allow FCM to catch up after quota error. AppError added to Mongo");
+            Thread.sleep(10000);
+        } catch (InterruptedException ex) {
+            //ignore
+        } 
+    }
     public void sendMessage(CommuterRequest commuterRequest) {
         try {
             String topic = Constants.commuterRequest + commuterRequest.getAssociationId();
@@ -228,7 +236,7 @@ public class MessagingService {
 
         } catch (Exception e) {
             LOGGER.error("Failed to send commuterRequest FCM message");
-            e.printStackTrace();
+            sleepToCatchUp(e);
         }
     }
 
@@ -242,7 +250,7 @@ public class MessagingService {
 
         } catch (Exception e) {
             LOGGER.error("Failed to send passengerCount FCM message");
-            e.printStackTrace();
+            sleepToCatchUp(e);
         }
     }
 

@@ -22,6 +22,8 @@ server:
         threads:
             max: 200
 spring:
+    main:
+        allow-circular-references: true
     data:
         mongodb:
             database: kasie_transie_db

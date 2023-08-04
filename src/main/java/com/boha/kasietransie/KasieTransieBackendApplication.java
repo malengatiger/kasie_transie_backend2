@@ -13,6 +13,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
@@ -26,6 +27,7 @@ import java.util.logging.Logger;
 
 @SpringBootApplication
 @EnableMongoRepositories(basePackages = "com.boha.kasietransie.data.repos")
+@EnableAsync
 @Configuration
 public class KasieTransieBackendApplication implements ApplicationListener<ApplicationReadyEvent> {
 	private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();

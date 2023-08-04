@@ -52,6 +52,7 @@ public class DataController {
     final MediaService mediaService;
     final AmbassadorService ambassadorService;
     final CommuterService commuterService;
+    final DispatchAsyncHelperService dispatchAsyncHelperService;
 
     @PostMapping("/createUser")
     public ResponseEntity<Object> createUser(@RequestBody User user) {
@@ -947,10 +948,11 @@ public class DataController {
         }
 
     }
+
     @GetMapping("/generateRouteHeartbeats")
     public ResponseEntity<Object> generateRouteHeartbeats(@RequestParam String routeId,
-                                                     @RequestParam int numberOfCars,
-                                                     @RequestParam int intervalInSeconds) {
+                                                          @RequestParam int numberOfCars,
+                                                          @RequestParam int intervalInSeconds) {
         try {
 
             List<VehicleHeartbeat> m = vehicleService.generateRouteHeartbeats(
@@ -964,6 +966,7 @@ public class DataController {
         }
 
     }
+
     @GetMapping("/generateCommuterRequests")
     public ResponseEntity<Object> generateCommuterRequests(
             @RequestParam String associationId,
@@ -982,6 +985,7 @@ public class DataController {
         }
 
     }
+
     @GetMapping("/generateRouteCommuterRequests")
     public ResponseEntity<Object> generateRouteCommuterRequests(
             @RequestParam String routeId,
@@ -1018,6 +1022,7 @@ public class DataController {
         }
 
     }
+
     @GetMapping("/generateRoutePassengerCounts")
     public ResponseEntity<Object> generateRoutePassengerCounts(
             @RequestParam String routeId,
@@ -1042,7 +1047,7 @@ public class DataController {
             @RequestParam int numberOfCars,
             @RequestParam int intervalInSeconds) {
         try {
-            List<DispatchRecord> m = dispatchService.generateDispatchRecords(
+            List<DispatchRecord> m = dispatchAsyncHelperService.generateDispatchRecords(
                     associationId, numberOfCars, intervalInSeconds);
             return ResponseEntity.ok(m);
         } catch (Exception e) {
@@ -1053,19 +1058,20 @@ public class DataController {
         }
 
     }
+
     @GetMapping("/generateRouteDispatchRecords")
     public ResponseEntity<Object> generateRouteDispatchRecords(
             @RequestParam String routeId,
             @RequestParam int numberOfCars,
             @RequestParam int intervalInSeconds) {
         try {
-            List<DispatchRecord> m = dispatchService.generateRouteDispatchRecords(
+            int m = dispatchAsyncHelperService.generateRouteDispatchRecordsInParallel(
                     routeId, numberOfCars, intervalInSeconds);
             return ResponseEntity.ok(m);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
                     new CustomErrorResponse(400,
-                            "generateRouteDispatchRecords failed: " + e.getMessage(),
+                            "generateRouteDispatchRecordsInParallel failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
 

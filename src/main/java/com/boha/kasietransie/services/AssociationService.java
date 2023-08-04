@@ -40,7 +40,6 @@ public class AssociationService {
     private final CityRepository cityRepository;
     private final SettingsModelRepository settingsModelRepository;
     private final ResourceLoader resourceLoader;
-    private final MongoTemplate mongoTemplate;
 
 
     public AssociationService(AppErrorRepository appErrorRepository,
@@ -60,7 +59,6 @@ public class AssociationService {
         this.cityRepository = cityRepository;
         this.settingsModelRepository = settingsModelRepository;
         this.resourceLoader = resourceLoader;
-        this.mongoTemplate = mongoTemplate;
         logger.info(MM + " AssociationService constructed ");
 
     }
