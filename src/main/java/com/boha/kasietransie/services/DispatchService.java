@@ -497,25 +497,33 @@ public class DispatchService {
                 " number of routeLandmarks on route: " + routeLandmarks.size());
         RouteLandmark prevRouteLandmark = null;
         AmbassadorPassengerCount previousAPC = null;
+        AmbassadorPassengerCount originAPC = null;
+
         int index = 0;
         for (RouteLandmark mark : routeLandmarks) {
             logger.info("\n\n" + E.BLUE_DOT + " ...... processing landmark: " + E.FLOWER_RED +
                     E.FLOWER_RED + " " + mark.getLandmarkName());
             try {
                 // generate arrival and dispatch at landmark
-                handleArrivalAndDispatch(users, dispatchRecords, vehicle, minutesAgo, mark);
+                DispatchRecord dr = handleArrivalAndDispatch(users, dispatchRecords, vehicle, minutesAgo, mark);
                 minutesAgo = handleDateAndSleep(minutesAgo, intervalInSeconds / 2);
 
-                if (prevRouteLandmark != null) {
-                    // generate heartbeats up to next landmark
-                    List<RoutePoint> points = getRoutePointsBetweenLandmarks(routePoints, prevRouteLandmark, mark);
-                    if (!points.isEmpty()) {
-                        List<Integer> indices = vehicleService.getSortedIndices(points);
-                        handleHeartbeats(points, vehicle, minutesAgo, indices, intervalInSeconds / 2);
-                    }
+                if (index == 0) {
+                    previousAPC = getAmbassadorPassengerCount(vehicle, minutesAgo,
+                            mark, users.get(0), dr.getPassengers());
                 }
 
-                previousAPC = generateAmbassadorPassengerCount(vehicle, routeLandmarks, users, minutesAgo, previousAPC, mark);
+                // generate heartbeats up to next landmark
+                List<RoutePoint> points = getRoutePointsBetweenLandmarks(routePoints, prevRouteLandmark, mark);
+                if (!points.isEmpty()) {
+                    List<Integer> indices = vehicleService.getSortedIndices(points);
+                    handleHeartbeats(points, vehicle, minutesAgo, indices, intervalInSeconds / 2);
+                }
+                AmbassadorPassengerCount count = generateAmbassadorPassengerCount(vehicle, routeLandmarks,
+                        users, minutesAgo, previousAPC, mark);
+
+                logger.info(E.CROISSANT + " apc: getCurrentPassengers: " + count.getCurrentPassengers());
+                previousAPC = count;
                 prevRouteLandmark = mark;
                 minutesAgo = handleDateAndSleep(minutesAgo, intervalInSeconds / 2);
                 index++;
@@ -523,7 +531,7 @@ public class DispatchService {
                 if (index == routeLandmarks.size()) {
                     heartbeatService.addVehicleHeartbeat(getVehicleHeartbeat(
                             vehicle, minutesAgo, mark.getPosition()));
-                    logger.info(E.FROG + E.FROG +E.FROG + E.FROG +
+                    logger.info(E.FROG + E.FROG + E.FROG + E.FROG +
                             " last landmark heartbeat added: " + vehicle.getVehicleReg()
                             + " " + mark.getLandmarkName() + " on " + mark.getRouteName());
 
@@ -536,7 +544,11 @@ public class DispatchService {
                 + E.FLOWER_RED + " " + dispatchRecords.size() + " route: " + route.getName());
     }
 
-    private AmbassadorPassengerCount generateAmbassadorPassengerCount(Vehicle vehicle, List<RouteLandmark> routeLandmarks, List<User> users, DateTime minutesAgo, AmbassadorPassengerCount previousAPC, RouteLandmark mark) {
+    private AmbassadorPassengerCount generateAmbassadorPassengerCount(Vehicle vehicle,
+                                                                      List<RouteLandmark> routeLandmarks,
+                                                                      List<User> users, DateTime minutesAgo,
+                                                                      AmbassadorPassengerCount previousAPC,
+                                                                      RouteLandmark mark) {
         // generate passenger counts at this landmark
         List<AmbassadorPassengerCount> counts = new ArrayList<>();
         AmbassadorPassengerCount apc = ambassadorService.getAmbassadorPassengerCount(
@@ -566,8 +578,8 @@ public class DispatchService {
 
     private void handleHeartbeats(List<RoutePoint> routePoints,
                                   Vehicle vehicle, DateTime minutesAgo, List<Integer> indices, int intervalInSeconds) {
-        logger.info(E.HEART_BLUE+E.HEART_BLUE+E.HEART_BLUE+" generate " + indices.size() + " heartbeats, intervalInSeconds: "
-        + intervalInSeconds);
+        logger.info(E.HEART_BLUE + E.HEART_BLUE + E.HEART_BLUE + " generate " + indices.size() + " heartbeats, intervalInSeconds: "
+                + intervalInSeconds);
         for (Integer index : indices) {
             RoutePoint rp = routePoints.get(index);
             VehicleHeartbeat vh = getVehicleHeartbeat(vehicle, minutesAgo, rp.getPosition());
@@ -597,6 +609,9 @@ public class DispatchService {
 
 
     List<RoutePoint> getRoutePointsBetweenLandmarks(List<RoutePoint> routePoints, RouteLandmark fromLandmark, RouteLandmark toLandmark) {
+        if (fromLandmark == null) {
+            return new ArrayList<>();
+        }
         int fromIndex = -1;
         int toIndex = -1;
         for (RoutePoint routePoint : routePoints) {
@@ -622,10 +637,10 @@ public class DispatchService {
     }
 
 
-    private void handleArrivalAndDispatch(List<User> users,
-                                          List<DispatchRecord> dispatchRecords,
-                                          Vehicle vehicle, DateTime minutesAgo,
-                                          RouteLandmark mark) {
+    private DispatchRecord handleArrivalAndDispatch(List<User> users,
+                                                    List<DispatchRecord> dispatchRecords,
+                                                    Vehicle vehicle, DateTime minutesAgo,
+                                                    RouteLandmark mark) {
 
         int userIndex = random.nextInt(users.size() - 1);
         User user = users.get(userIndex);
@@ -633,8 +648,8 @@ public class DispatchService {
 
         DispatchRecord dp = getDispatchRecord(vehicle, minutesAgo, mark, user);
 
-        int passengers = random.nextInt(20);
-        if (passengers < 3) passengers = 16;
+        int passengers = random.nextInt(12);
+        if (passengers < 3) passengers = 12;
         dp.setPassengers(passengers);
         //
         DispatchRecord rec = addDispatchRecord(dp);
@@ -643,6 +658,29 @@ public class DispatchService {
         logger.info(E.FROG + E.FROG + " dispatch record added: " + dp.getVehicleReg()
                 + " passengers: " + dp.getPassengers() + " at landmark: " + dp.getLandmarkName()
                 + " of route: " + dp.getRouteName() + " " + E.BLUE_BIRD);
+        return dp;
+    }
+
+    private AmbassadorPassengerCount getAmbassadorPassengerCount(Vehicle vehicle, DateTime minutesAgo, RouteLandmark mark, User user, int passengers) {
+        AmbassadorPassengerCount apc = new AmbassadorPassengerCount();
+        apc.setCreated(minutesAgo.toDateTimeISO().toString());
+        apc.setPassengersIn(passengers);
+        apc.setPassengersOut(0);
+        apc.setCurrentPassengers(passengers);
+        apc.setVehicleId(vehicle.getVehicleId());
+        apc.setVehicleReg(vehicle.getVehicleReg());
+        apc.setPosition(mark.getPosition());
+        apc.setOwnerId(vehicle.getOwnerId());
+        apc.setOwnerName(vehicle.getOwnerName());
+        apc.setAssociationId(vehicle.getAssociationId());
+        apc.setRouteId(mark.getRouteId());
+        apc.setRouteName(mark.getRouteName());
+        apc.setUserId(user.getUserId());
+        apc.setUserName(user.getName());
+        apc.setRouteLandmarkId(mark.getLandmarkId());
+        apc.setRouteLandmarkName(mark.getLandmarkName());
+        AmbassadorPassengerCount pc = ambassadorService.addAmbassadorPassengerCount(apc);
+        return pc;
     }
 
     private void handleArrival(Vehicle vehicle, DateTime minutesAgo, RouteLandmark mark) {
