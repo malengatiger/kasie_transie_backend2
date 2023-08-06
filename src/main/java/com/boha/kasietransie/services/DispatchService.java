@@ -10,8 +10,6 @@ import com.boha.kasietransie.util.E;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.geo.GeoResult;
 import org.springframework.data.geo.GeoResults;
@@ -482,14 +480,14 @@ public class DispatchService {
 
     @Async
     public void generateRouteDispatchRecords(Route route,
-                                                             Vehicle vehicle,
-                                                             List<RouteLandmark> routeLandmarks,
-                                                             List<RoutePoint> routePoints,
-                                                             List<User> users,
-                                                             int intervalInSeconds) {
+                                             Vehicle vehicle,
+                                             List<RouteLandmark> routeLandmarks,
+                                             List<RoutePoint> routePoints,
+                                             List<User> users,
+                                             int intervalInSeconds) {
 
-        logger.info("\n\n"+E.BLUE_DOT + E.BLUE_DOT + E.BLUE_DOT + " generateRouteDispatchRecords (ASYNC): " + vehicle.getVehicleReg()
-        + " " + routeLandmarks.get(0).getLandmarkName() + " on " + routeLandmarks.get(0).getRouteName() + E.RED_DOT+E.RED_DOT);
+        logger.info("\n\n" + E.BLUE_DOT + E.BLUE_DOT + E.BLUE_DOT + " generateRouteDispatchRecords (ASYNC): " + vehicle.getVehicleReg()
+                + " " + routeLandmarks.get(0).getLandmarkName() + " on " + routeLandmarks.get(0).getRouteName() + E.RED_DOT + E.RED_DOT);
 
         List<DispatchRecord> dispatchRecords = new ArrayList<>();
 
@@ -499,25 +497,17 @@ public class DispatchService {
                 " number of routeLandmarks on route: " + routeLandmarks.size());
         RouteLandmark prevRouteLandmark = null;
         AmbassadorPassengerCount previousAPC = null;
+        int index = 0;
         for (RouteLandmark mark : routeLandmarks) {
+            logger.info("\n\n" + E.BLUE_DOT + " ...... processing landmark: " + E.FLOWER_RED +
+                    E.FLOWER_RED + " " + mark.getLandmarkName());
             try {
-                // generate arrival and dispatch
-                handleArrivalAndDispatch(intervalInSeconds, users, dispatchRecords, vehicle, minutesAgo, mark);
+                // generate arrival and dispatch at landmark
+                handleArrivalAndDispatch(users, dispatchRecords, vehicle, minutesAgo, mark);
                 minutesAgo = handleDateAndSleep(minutesAgo, intervalInSeconds / 2);
-
-                // generate passenger counts at this landmark
-                List<AmbassadorPassengerCount> counts = new ArrayList<>();
-                AmbassadorPassengerCount apc = ambassadorService.getAmbassadorPassengerCount(users, counts, vehicle, routeLandmarks,
-                        minutesAgo, mark.getIndex(), previousAPC, mark);
-
-                logger.info(E.HAND1 + E.HAND1 + " Passenger Count: " + apc.getPassengersIn()
-                        + " out: " + apc.getPassengersOut()
-                        + " current: " + apc.getCurrentPassengers());
 
                 if (prevRouteLandmark != null) {
                     // generate heartbeats up to next landmark
-                    logger.info(E.BLUE_DOT + E.BLUE_DOT + E.BLUE_DOT + " prevRouteLandmark rpIndex: " + prevRouteLandmark.getRoutePointIndex()
-                            + " mark rpIndex: " + mark.getRoutePointIndex() + " check rpIndex, must not be the same " + E.RED_DOT);
                     List<RoutePoint> points = getRoutePointsBetweenLandmarks(routePoints, prevRouteLandmark, mark);
                     if (!points.isEmpty()) {
                         List<Integer> indices = vehicleService.getSortedIndices(points);
@@ -525,15 +515,38 @@ public class DispatchService {
                     }
                 }
 
-                previousAPC = apc;
+                previousAPC = generateAmbassadorPassengerCount(vehicle, routeLandmarks, users, minutesAgo, previousAPC, mark);
                 prevRouteLandmark = mark;
                 minutesAgo = handleDateAndSleep(minutesAgo, intervalInSeconds / 2);
+                index++;
+                //add heartbeat at last landmark ....
+                if (index == routeLandmarks.size()) {
+                    heartbeatService.addVehicleHeartbeat(getVehicleHeartbeat(
+                            vehicle, minutesAgo, mark.getPosition()));
+                    logger.info(E.FROG + E.FROG +E.FROG + E.FROG +
+                            " last landmark heartbeat added: " + vehicle.getVehicleReg()
+                            + " " + mark.getLandmarkName() + " on " + mark.getRouteName());
+
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-       logger.info(E.FROG+E.FROG+" Dispatch records for: " + vehicle.getVehicleReg()
-               + " " + dispatchRecords.size() + " route: " + route.getName());
+        logger.info(E.FROG + E.FROG + " Dispatch records for: " + vehicle.getVehicleReg()
+                + E.FLOWER_RED + " " + dispatchRecords.size() + " route: " + route.getName());
+    }
+
+    private AmbassadorPassengerCount generateAmbassadorPassengerCount(Vehicle vehicle, List<RouteLandmark> routeLandmarks, List<User> users, DateTime minutesAgo, AmbassadorPassengerCount previousAPC, RouteLandmark mark) {
+        // generate passenger counts at this landmark
+        List<AmbassadorPassengerCount> counts = new ArrayList<>();
+        AmbassadorPassengerCount apc = ambassadorService.getAmbassadorPassengerCount(
+                users, counts, vehicle, routeLandmarks,
+                minutesAgo, mark.getIndex(), previousAPC, mark);
+
+        logger.info(E.HAND1 + E.HAND1 + " Passenger Count: " + apc.getPassengersIn()
+                + " out: " + apc.getPassengersOut()
+                + " current: " + apc.getCurrentPassengers());
+        return apc;
     }
 
 
@@ -553,21 +566,11 @@ public class DispatchService {
 
     private void handleHeartbeats(List<RoutePoint> routePoints,
                                   Vehicle vehicle, DateTime minutesAgo, List<Integer> indices, int intervalInSeconds) {
+        logger.info(E.HEART_BLUE+E.HEART_BLUE+E.HEART_BLUE+" generate " + indices.size() + " heartbeats, intervalInSeconds: "
+        + intervalInSeconds);
         for (Integer index : indices) {
             RoutePoint rp = routePoints.get(index);
-            VehicleHeartbeat vh = new VehicleHeartbeat();
-            vh.setVehicleId(vehicle.getVehicleId());
-            vh.setMake(vehicle.getMake());
-            vh.setModel(vehicle.getModel());
-            vh.setCreated(minutesAgo.toString());
-            vh.setAssociationId(vehicle.getAssociationId());
-            vh.setPosition(rp.getPosition());
-            vh.setOwnerId(vehicle.getOwnerId());
-            vh.setOwnerName(vehicle.getOwnerName());
-            vh.setVehicleReg(vehicle.getVehicleReg());
-            vh.setLongDate(minutesAgo.getMillis());
-            vh.setVehicleHeartbeatId(UUID.randomUUID().toString());
-
+            VehicleHeartbeat vh = getVehicleHeartbeat(vehicle, minutesAgo, rp.getPosition());
             heartbeatService.addVehicleHeartbeat(vh);
             int min = random.nextInt(5);
             if (min == 0) min = 3;
@@ -576,30 +579,24 @@ public class DispatchService {
         }
     }
 
-    private List<Vehicle> getList(int numberOfCars, Route route) {
-        List<Vehicle> vehicleList;
-        Page<Vehicle> all = vehicleRepository.findByAssociationId(route.getAssociationId(), Pageable.ofSize(numberOfCars));
-        logger.info(E.BLUE_DOT + " found " + all.toList().size()
-                + " cars for route: " + route.getName() + " ----- " + E.RED_DOT + E.RED_DOT);
-
-
-        vehicleList = all.toList();
-        return vehicleList;
-    }
-
-    private Route getRoute(String routeId, Route route) {
-        List<Route> routes = routeRepository.findByRouteId(routeId);
-        if (!routes.isEmpty()) {
-            route = routes.get(0);
-        }
-        return route;
+    private static VehicleHeartbeat getVehicleHeartbeat(Vehicle vehicle, DateTime minutesAgo, Position position) {
+        VehicleHeartbeat vh = new VehicleHeartbeat();
+        vh.setVehicleId(vehicle.getVehicleId());
+        vh.setMake(vehicle.getMake());
+        vh.setModel(vehicle.getModel());
+        vh.setCreated(minutesAgo.toString());
+        vh.setAssociationId(vehicle.getAssociationId());
+        vh.setPosition(position);
+        vh.setOwnerId(vehicle.getOwnerId());
+        vh.setOwnerName(vehicle.getOwnerName());
+        vh.setVehicleReg(vehicle.getVehicleReg());
+        vh.setLongDate(minutesAgo.getMillis());
+        vh.setVehicleHeartbeatId(UUID.randomUUID().toString());
+        return vh;
     }
 
 
     List<RoutePoint> getRoutePointsBetweenLandmarks(List<RoutePoint> routePoints, RouteLandmark fromLandmark, RouteLandmark toLandmark) {
-        logger.info(E.COFFEE + E.COFFEE + " getRoutePointsBetweenLandmarks, routePoints: " + routePoints.size()
-                + " get route points between " + fromLandmark.getLandmarkName()
-                + " and " + toLandmark.getLandmarkName() + E.LEAF + " route: " + fromLandmark.getRouteName());
         int fromIndex = -1;
         int toIndex = -1;
         for (RoutePoint routePoint : routePoints) {
@@ -614,21 +611,18 @@ public class DispatchService {
                 break;
             }
         }
-        logger.info(E.COFFEE + E.COFFEE + E.COFFEE
-                + " getRoutePointsBetweenLandmarks: fromIndex: " + fromIndex + " toIndex: " + toIndex);
         if (fromIndex == -1 || toIndex == -1) {
             logger.error(E.RED_DOT + E.RED_DOT + E.RED_DOT +
                     " Something wrong; landmark indices may be fucked");
             return new ArrayList<>();
         }
         List<RoutePoint> points = routePoints.subList(fromIndex, toIndex);
-        logger.info(E.COFFEE + " " + points.size() + " Points between " + fromLandmark.getLandmarkName() + " and " + toLandmark.getLandmarkName());
+        logger.info(E.COFFEE + E.COFFEE + E.COFFEE + " " + points.size() + " Points between " + fromLandmark.getLandmarkName() + " and " + toLandmark.getLandmarkName());
         return points;
     }
 
 
-
-    private void handleArrivalAndDispatch(int intervalInSeconds, List<User> users,
+    private void handleArrivalAndDispatch(List<User> users,
                                           List<DispatchRecord> dispatchRecords,
                                           Vehicle vehicle, DateTime minutesAgo,
                                           RouteLandmark mark) {
@@ -636,7 +630,6 @@ public class DispatchService {
         int userIndex = random.nextInt(users.size() - 1);
         User user = users.get(userIndex);
         handleArrival(vehicle, minutesAgo, mark);
-        handleDateAndSleep(minutesAgo, intervalInSeconds);
 
         DispatchRecord dp = getDispatchRecord(vehicle, minutesAgo, mark, user);
 
@@ -668,8 +661,10 @@ public class DispatchService {
         va.setVehicleId(vehicle.getVehicleId());
         va.setVehicleReg(vehicle.getVehicleReg());
         va.setVehicleArrivalId(UUID.randomUUID().toString());
+
         addVehicleArrival(va);
-        logger.info(E.LEAF + E.LEAF + " arrival record added: " + va.getVehicleReg()
+        logger.info(E.LEAF + E.LEAF + E.LEAF + E.LEAF +
+                " arrival record added: " + va.getVehicleReg()
                 + " at landmark: " + va.getLandmarkName() + " " + E.BLUE_BIRD);
     }
 

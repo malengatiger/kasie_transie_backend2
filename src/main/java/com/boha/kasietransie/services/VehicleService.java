@@ -264,9 +264,9 @@ public class VehicleService {
     List<Integer> getSortedIndices(List<RoutePoint> points) {
         int bound = 5;
         if (points.size() > 400) {
-            bound = 8;
+            bound = 10;
         } else {
-            bound = 4;
+            bound = 2;
         }
         int count = random.nextInt(bound);
         if (count == 0) {
