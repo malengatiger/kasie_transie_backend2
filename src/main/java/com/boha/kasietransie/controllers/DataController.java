@@ -1001,13 +1001,11 @@ public class DataController {
 
     @GetMapping("/generateCommuterRequests")
     public ResponseEntity<Object> generateCommuterRequests(
-            @RequestParam String associationId,
-            @RequestParam int numberOfCommuters,
-            @RequestParam int intervalInSeconds) {
+            @RequestParam String associationId) {
         try {
 
             List<CommuterRequest> m = dispatchAsyncHelperService.generateCommuterRequestsInParallel(
-                    associationId, intervalInSeconds, numberOfCommuters);
+                    associationId);
             return ResponseEntity.ok(m);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
@@ -1020,14 +1018,12 @@ public class DataController {
 
     @GetMapping("/generateRouteCommuterRequests")
     public ResponseEntity<Object> generateRouteCommuterRequests(
-            @RequestParam String routeId,
-            @RequestParam int numberOfCommuters,
-            @RequestParam int intervalInSeconds) {
+            @RequestParam String routeId) {
         try {
-
             commuterService.generateRouteCommuterRequests(
-                    routeId, intervalInSeconds, numberOfCommuters);
-            CustomResponse c = new CustomResponse(200,"Commuter request generation",
+                    routeId);
+            CustomResponse c = new CustomResponse(200,
+                    "Commuter request generation",
                     DateTime.now().toDateTimeISO().toString());
             return ResponseEntity.ok(c);
         } catch (Exception e) {
@@ -1036,7 +1032,6 @@ public class DataController {
                             "generateRouteCommuterRequests failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
-
     }
 
     @GetMapping("/generateAmbassadorPassengerCounts")

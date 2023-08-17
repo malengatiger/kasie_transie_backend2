@@ -22,6 +22,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 import static org.springframework.data.mongodb.core.query.Query.query;
@@ -64,15 +67,34 @@ public class DispatchAsyncHelperService {
         Query query = new Query(c).with(Sort.by("index"));
         List<RouteLandmark> routeLandmarks = mongoTemplate.find(query, RouteLandmark.class);
 
+        //generate landmark requests in parallel tasks
+        ExecutorService executorService = Executors.newFixedThreadPool(routeLandmarks.size());
+        logger.info(E.DOG + E.DOG + E.DOG + " executorService newFixedThreadPool built: " + executorService);
+
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (Vehicle vehicle : vehicleList) {
-            dispatchService.generateRouteDispatchRecords(route, vehicle,
-                    routeLandmarks, users, request.getIntervalInSeconds());
+            Route finalRoute = route;
+            CompletableFuture<Void> future = CompletableFuture.runAsync(()
+                    -> dispatchService.generateRouteDispatchRecords(
+                    finalRoute, vehicle,
+                    routeLandmarks, users,
+                    request.getIntervalInSeconds()), executorService);
+            futures.add(future);
         }
+
+        //start parallel tasks
+        CompletableFuture.allOf(futures.toArray(
+                new CompletableFuture[0])).join();
+        executorService.shutdown();
+
+
+        logger.info(E.DOG + E.DOG + E.DOG + " parallel dispatch record generation completed for : "
+                + route.getName() + "\n\n");
 
     }
 
     public List<CommuterRequest> generateCommuterRequestsInParallel(
-            String associationId, int numberOfCommuters, int intervalInSeconds) {
+            String associationId) {
         logger.info(E.BLUE_DOT + " generateCommuterRequestsInParallel ASYNC " + E.RED_DOT + E.RED_DOT);
 
         List<Route> routes = routeService.getAssociationRoutes(associationId);
@@ -88,22 +110,10 @@ public class DispatchAsyncHelperService {
 
         for (Route filteredRoute : filteredRoutes) {
             commuterService.generateRouteCommuterRequests(
-                    filteredRoute.getRouteId(), numberOfCommuters, intervalInSeconds);
+                    filteredRoute.getRouteId());
         }
 
         return new ArrayList<>();
     }
 
-    private List<Vehicle> getList(int numberOfCars, Route route) {
-        List<Vehicle> vehicleList;
-        Page<Vehicle> all = vehicleRepository.findByAssociationId(
-                route.getAssociationId(), Pageable.ofSize(numberOfCars));
-
-        logger.info(E.BLUE_DOT + " found " + all.toList().size()
-                + " cars for route: " + route.getName() + " ----- " + E.RED_DOT + E.RED_DOT);
-
-
-        vehicleList = all.toList();
-        return vehicleList;
-    }
 }

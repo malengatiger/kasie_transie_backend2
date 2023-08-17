@@ -27,10 +27,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Logger;
-
-import static org.springframework.data.mongodb.core.query.Criteria.where;
-import static org.springframework.data.mongodb.core.query.Query.query;
 
 @Service
 public class CommuterService {
@@ -191,7 +191,7 @@ public class CommuterService {
 
     public CommuterRequest addCommuterRequest(CommuterRequest commuterRequest) {
         CommuterRequest c = commuterRequestRepository.insert(commuterRequest);
-        messagingService.sendMessage(commuterRequest);
+        messagingService.sendMessage(c);
         return c;
     }
 
@@ -218,20 +218,23 @@ public class CommuterService {
 
     @Async
     public void generateRouteCommuterRequests(
-            String routeId, int intervalInSeconds, int numberOfCommuters) {
-        logger.info(E.HAND2 + E.HAND2 + E.HAND2 + " generateRouteCommuterRequests  ...");
+            String routeId) {
 
-        Route route = null;
+        Route route;
         List<Route> routes = routeRepository.findByRouteId(routeId);
         if (!routes.isEmpty()) {
             route = routes.get(0);
+        } else {
+            route = null;
         }
         if (route == null) {
             return;
         }
+        logger.info(E.HAND2 + E.HAND2 + E.HAND2 + " generateRouteCommuterRequests for: "
+        + route.getName());
 
         List<Commuter> commuters = commuterRepository.findAll();
-        List<CommuterRequest> commuterRequests = new ArrayList<>();
+
         logger.info(E.BLUE_DOT + " commuters in play: " + commuters.size() + " commuters ...");
 
         DateTime minutesAgo = DateTime.now().toDateTimeISO().minusHours(1);
@@ -239,57 +242,79 @@ public class CommuterService {
         Query query = new Query(c).with(Sort.by("index"));
         List<RouteLandmark> routeLandmarks = mongoTemplate.find(query, RouteLandmark.class);
 
-        for (int i = 0; i < numberOfCommuters; i++) {
-            for (Commuter commuter : commuters) {
-                int k = random.nextInt(100);
-                if (k > 70) {
-                    continue;
-                }
-                int landmarkIndex = random.nextInt(routeLandmarks.size() - 1);
-                RouteLandmark mark = routeLandmarks.get(landmarkIndex);
-                int passengers = random.nextInt(16);
-                if (passengers == 0) passengers = 1;
-                CommuterRequest cr = new CommuterRequest();
-                cr.setCommuterRequestId(UUID.randomUUID().toString());
-                cr.setCommuterId(commuter.getCommuterId());
-                cr.setDateRequested(minutesAgo.toString());
-                cr.setAssociationId(mark.getAssociationId());
-                cr.setCurrentPosition(getRandomPosition(mark.getPosition()));
-                cr.setRouteId(mark.getRouteId());
-                cr.setRouteName(mark.getRouteName());
-                cr.setNumberOfPassengers(passengers);
-                cr.setRouteLandmarkId(mark.getLandmarkId());
-                cr.setRouteLandmarkName(mark.getLandmarkName());
-                cr.setDestinationCityId(route.getRouteStartEnd().getEndCityId());
-                cr.setDestinationCityName(route.getRouteStartEnd().getEndCityName());
-                cr.setOriginCityId(route.getRouteStartEnd().getStartCityId());
-                cr.setOriginCityName(route.getRouteStartEnd().getStartCityName());
-                cr.setNumberOfPassengers(passengers);
-                //
-                CommuterRequest request = addCommuterRequest(cr);
-                commuterRequests.add(request);
-                //
-                minutesAgo = getDateTime(intervalInSeconds, minutesAgo);
-            }
-        }
+        //generate landmark requests in parallel tasks
+        ExecutorService executorService = Executors.newFixedThreadPool(routeLandmarks.size());
+        logger.info(E.DOG + E.DOG + E.DOG + " executorService newFixedThreadPool built: " + executorService);
 
-        logger.info(E.LEAF + E.LEAF + " commuter requests added: "
-                + " route: " + route.getName() + " at: " + commuterRequests.size() + " requests generated"
-                + " " + E.FLOWER_RED);
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        for (RouteLandmark landmark : routeLandmarks) {
+            CompletableFuture<Void> future = CompletableFuture.runAsync(()
+                    -> makeBusyLandmark(route,commuters,
+                    minutesAgo,landmark), executorService);
+            futures.add(future);
+        }
+        //start parallel tasks
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        executorService.shutdown();
+
+
+        logger.info(E.DOG + E.DOG + E.DOG + " parallel commuter request generation completed for : "
+                + route.getName() + "\n\n");
+
     }
 
-    private DateTime getDateTime(int intervalInSeconds, DateTime minutesAgo) {
-        int addMin = random.nextInt(5);
-        if (addMin == 0) {
-            addMin = 1;
+    private void makeBusyLandmark(Route route, List<Commuter> commuters,
+                                  DateTime minutesAgo,
+                                  RouteLandmark mark) {
+
+        logger.info(E.RED_DOT+E.RED_DOT+E.RED_DOT+
+                " Route landmark gonna be busy! " + mark.getLandmarkName() + " on route: "
+        + mark.getRouteName());
+        int count = random.nextInt(100);
+        if (count < 10) count = 20;
+        for (int i = 0; i < count; i++) {
+            int passengers = random.nextInt(10);
+            if (passengers == 0) passengers++;
+            int commIndex = random.nextInt(commuters.size() - 1);
+            Commuter commuter = commuters.get(commIndex);
+            writeCommuterRequest(route, minutesAgo,
+                    commuter, mark, passengers);
         }
-        minutesAgo = minutesAgo.plusMinutes(addMin);
+    }
+
+    private void writeCommuterRequest(Route route,
+                                      DateTime minutesAgo,
+                                      Commuter commuter,
+                                      RouteLandmark mark, int passengers) {
+        CommuterRequest cr = new CommuterRequest();
+        cr.setCommuterRequestId(UUID.randomUUID().toString());
+        cr.setCommuterId(commuter.getCommuterId());
+        minutesAgo = minutesAgo.plusMinutes(random.nextInt(10));
+        cr.setDateRequested(minutesAgo.toString());
+        cr.setAssociationId(mark.getAssociationId());
+        cr.setCurrentPosition(getRandomPosition(mark.getPosition()));
+        cr.setRouteId(mark.getRouteId());
+        cr.setRouteName(mark.getRouteName());
+        cr.setNumberOfPassengers(passengers);
+        cr.setRouteLandmarkId(mark.getLandmarkId());
+        cr.setRouteLandmarkName(mark.getLandmarkName());
+        cr.setDestinationCityId(route.getRouteStartEnd().getEndCityId());
+        cr.setDestinationCityName(route.getRouteStartEnd().getEndCityName());
+        cr.setOriginCityId(route.getRouteStartEnd().getStartCityId());
+        cr.setOriginCityName(route.getRouteStartEnd().getStartCityName());
+        cr.setNumberOfPassengers(passengers);
+        //
+
         try {
-            Thread.sleep(intervalInSeconds * 1000L);
+            addCommuterRequest(cr);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            Thread.sleep(5000);
         } catch (InterruptedException e) {
             //ignore
         }
-        return minutesAgo;
     }
 
     public Position getRandomPosition(Position pos) {
@@ -298,8 +323,8 @@ public class CommuterService {
         int lngDistance = random.nextInt(5000);
         if (lngDistance < 500) lngDistance = 1500;
 
-        double lat = getCoordinateWithOffset(pos.getCoordinates().get(1),latDistance);
-        double lng = getCoordinateWithOffset(pos.getCoordinates().get(0),lngDistance);
+        double lat = getCoordinateWithOffset(pos.getCoordinates().get(1), latDistance);
+        double lng = getCoordinateWithOffset(pos.getCoordinates().get(0), lngDistance);
 
         List<Double> coords = new ArrayList<>();
         coords.add(lng);
@@ -311,6 +336,7 @@ public class CommuterService {
 
         return p;
     }
+
     private double getCoordinateWithOffset(double coordinate, double offsetInMeters) {
         double earthRadius = 6371000.0; // Earth's radius in meters
         double coordRad = toRadians(coordinate);

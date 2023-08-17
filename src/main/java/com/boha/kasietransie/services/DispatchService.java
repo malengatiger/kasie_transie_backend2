@@ -504,10 +504,11 @@ public class DispatchService {
                                              List<User> users,
                                              int intervalInSeconds) {
 
-        logger.info("\n\n" + E.BLUE_DOT + E.BLUE_DOT + E.BLUE_DOT + " generateRouteDispatchRecords (ASYNC): " + vehicle.getVehicleReg()
-                + " " + routeLandmarks.get(0).getLandmarkName() + " on " + routeLandmarks.get(0).getRouteName() + E.RED_DOT + E.RED_DOT);
+        logger.info("\n\n" + E.BLUE_DOT + E.BLUE_DOT + E.BLUE_DOT
+                + " generateRouteDispatchRecords (parallel ASYNC): " + vehicle.getVehicleReg()
+                + " " + routeLandmarks.get(0).getLandmarkName()
+                + " on " + routeLandmarks.get(0).getRouteName() + E.RED_DOT + E.RED_DOT);
 
-        List<DispatchRecord> dispatchRecords = new ArrayList<>();
 
         DateTime minutesAgo = DateTime.now().toDateTimeISO().minusHours(1);
         logger.info("\n\n"+E.BLUE_DOT + route.getName() + " will be used for "
@@ -523,7 +524,7 @@ public class DispatchService {
                     E.FLOWER_RED + " " + mark.getLandmarkName());
             try {
                 // generate arrival and dispatch at landmark
-                DispatchRecord dr = handleArrivalAndDispatch(users, dispatchRecords, vehicle, minutesAgo, mark);
+                DispatchRecord dr = handleArrivalAndDispatch(users, vehicle, minutesAgo, mark);
                 minutesAgo = handleDateAndSleep(minutesAgo, intervalInSeconds / 2);
 
                 if (index == 0) {
@@ -548,7 +549,7 @@ public class DispatchService {
             }
         }
         logger.info(E.FROG + E.FROG + " Dispatch records for: " + vehicle.getVehicleReg()
-                + E.FLOWER_RED + " " + dispatchRecords.size() + " route: " + route.getName());
+                + E.FLOWER_RED  + " route: " + route.getName());
     }
 
     private void generateDeparture(Vehicle vehicle, RouteLandmark mark, DateTime minutesAgo) {
@@ -665,7 +666,6 @@ public class DispatchService {
 
 
     private DispatchRecord handleArrivalAndDispatch(List<User> users,
-                                                    List<DispatchRecord> dispatchRecords,
                                                     Vehicle vehicle, DateTime minutesAgo,
                                                     RouteLandmark mark) {
 
@@ -679,8 +679,7 @@ public class DispatchService {
         if (passengers < 3) passengers = 12;
         dp.setPassengers(passengers);
         //
-        DispatchRecord rec = addDispatchRecord(dp);
-        dispatchRecords.add(rec);
+        addDispatchRecord(dp);
         //
         logger.info(E.FROG + E.FROG + " dispatch record added: " + dp.getVehicleReg()
                 + " passengers: " + dp.getPassengers() + " at landmark: " + dp.getLandmarkName()

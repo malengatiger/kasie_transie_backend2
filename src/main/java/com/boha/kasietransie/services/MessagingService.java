@@ -38,6 +38,7 @@ public class MessagingService {
     private static final String MM = E.GLOBE + E.GLOBE + E.GLOBE + E.GLOBE + E.GLOBE + E.GLOBE +
             " MessagingService " + E.RED_APPLE;
 
+    private boolean sleeping = false;
     public List<AssociationToken> getTokens(String associationId) {
         Query q = new Query().addCriteria(Criteria.where("associationId")
                 .is(associationId)).with(Sort.by(Sort.Direction.DESC, "created"));
@@ -87,6 +88,7 @@ public class MessagingService {
     }
 
     public void sendMessage(VehicleArrival vehicleArrival) {
+        if (checkSleeping()) return;
         try {
             String topic = Constants.vehicleArrival + vehicleArrival.getAssociationId();
             Notification notification = Notification.builder()
@@ -104,11 +106,21 @@ public class MessagingService {
             for (AssociationToken token : assTokens) {
                 sendAssociationMessage(vehicleArrival, Constants.vehicleArrival, notification, token.getToken());
             }
+            sleeping = false;
 
         } catch (Exception e) {
             logger.error("Failed to send vehicleArrival FCM message");
             sleepToCatchUp(e);
         }
+    }
+
+    private boolean checkSleeping() {
+        if (sleeping) {
+            logger.info(E.CANCEL+" ... attempt to send ignored. " +
+                    "We sleeping, Boss!");
+            return true;
+        }
+        return false;
     }
 
     private static void sendAssociationMessage(Object object, String dataType,
@@ -143,6 +155,8 @@ public class MessagingService {
     }
 
     public void sendMessage(VehicleDeparture vehicleDeparture) {
+        if (checkSleeping()) return;
+
         try {
             String topic = Constants.vehicleDeparture + vehicleDeparture.getAssociationId();
             Notification notification = Notification.builder()
@@ -159,6 +173,7 @@ public class MessagingService {
             for (AssociationToken token : assTokens) {
                 sendAssociationMessage(vehicleDeparture, Constants.vehicleDeparture, notification, token.getToken());
             }
+            sleeping = false;
 
 
         } catch (Exception e) {
@@ -168,6 +183,8 @@ public class MessagingService {
     }
 
     public void sendMessage(LocationRequest locationRequest) {
+        if (checkSleeping()) return;
+
         try {
             String topic = Constants.locationRequest + locationRequest.getAssociationId();
             Notification notification = Notification.builder()
@@ -185,6 +202,7 @@ public class MessagingService {
                 sendAssociationMessage(locationRequest, Constants.locationRequest, notification, token.getToken());
             }
 
+            sleeping = false;
 
         } catch (Exception e) {
             logger.error("Failed to send locationRequest FCM message");
@@ -193,6 +211,8 @@ public class MessagingService {
     }
 
     public void sendMessage(VehicleHeartbeat heartbeat) {
+        if (checkSleeping()) return;
+
         try {
             String topic = Constants.heartbeat + heartbeat.getAssociationId();
 
@@ -205,6 +225,7 @@ public class MessagingService {
                 sendAssociationMessage(heartbeat, Constants.heartbeat, null, token.getToken());
             }
 
+            sleeping = false;
 
 
         } catch (Exception e) {
@@ -214,6 +235,8 @@ public class MessagingService {
     }
 
     public void sendMessage(LocationResponse locationResponse) {
+        if (checkSleeping()) return;
+
         try {
             String topic = Constants.locationResponse + locationResponse.getAssociationId();
             Notification notification = Notification.builder()
@@ -230,6 +253,7 @@ public class MessagingService {
                 sendAssociationMessage(locationResponse, Constants.locationResponse, notification, token.getToken());
             }
 
+            sleeping = false;
 
 
         } catch (Exception e) {
@@ -239,6 +263,8 @@ public class MessagingService {
     }
 
     public void sendMessage(UserGeofenceEvent userGeofenceEvent) {
+        if (checkSleeping()) return;
+
         try {
             String topic = Constants.userGeofenceEvent + userGeofenceEvent.getAssociationId();
             Notification notification = Notification.builder()
@@ -255,6 +281,7 @@ public class MessagingService {
                 sendAssociationMessage(userGeofenceEvent, Constants.userGeofenceEvent, notification, token.getToken());
             }
 
+            sleeping = false;
 
 
         } catch (Exception e) {
@@ -264,6 +291,7 @@ public class MessagingService {
     }
 
     public void sendRouteUpdateMessage(RouteUpdateRequest routeUpdateRequest) throws Exception {
+        if (checkSleeping()) return;
         try {
             String topic = Constants.routeUpdateRequest + routeUpdateRequest.getAssociationId();
             Notification notification = Notification.builder()
@@ -280,6 +308,7 @@ public class MessagingService {
             for (AssociationToken token : assTokens) {
                 sendAssociationMessage(routeUpdateRequest, Constants.routeUpdateRequest, notification, token.getToken());
             }
+            sleeping = false;
 
         } catch (Exception e) {
             logger.error("Failed to send RouteUpdateMessage FCM message, routeId: " + routeUpdateRequest.getRouteId());
@@ -288,6 +317,8 @@ public class MessagingService {
     }
 
     public int sendVehicleUpdateMessage(String associationId, String vehicleId) {
+        if (checkSleeping()) return 9;
+
         try {
             List<Vehicle> vehicleList = vehicleRepository.findByVehicleId(vehicleId);
             Vehicle vehicle;
@@ -307,6 +338,7 @@ public class MessagingService {
 
             }
 
+            sleeping = false;
 
         } catch (Exception e) {
             logger.error("Failed to send VehicleUpdateMessage FCM message");
@@ -316,6 +348,8 @@ public class MessagingService {
     }
 
     public int sendVehicleMediaRequestMessage(VehicleMediaRequest request) throws Exception {
+        if (checkSleeping()) return 9;
+
         try {
             String topic = Constants.vehicleMediaRequest + request.getAssociationId();
             Notification notification = Notification.builder()
@@ -333,6 +367,7 @@ public class MessagingService {
                 sendAssociationMessage(request, Constants.vehicleMediaRequest, notification, token.getToken());
             }
 
+            sleeping = false;
 
 
         } catch (Exception e) {
@@ -343,6 +378,8 @@ public class MessagingService {
     }
 
     public void sendMessage(DispatchRecord dispatchRecord) {
+        if (checkSleeping()) return;
+
         try {
             String topic = Constants.dispatchRecord + dispatchRecord.getAssociationId();
             Notification notification = Notification.builder()
@@ -359,7 +396,7 @@ public class MessagingService {
                 sendAssociationMessage(dispatchRecord, Constants.vehicleArrival, notification, token.getToken());
             }
 
-
+            sleeping = false;
 
         } catch (Exception e) {
             logger.error("Failed to send dispatchRecord FCM message");
@@ -369,6 +406,7 @@ public class MessagingService {
 
     private void sleepToCatchUp(Exception e) {
         logger.error(e.getMessage());
+        sleeping = true;
         try {
             AppError a = new AppError();
             a.setCreated(DateTime.now().toDateTimeISO().toString());
@@ -376,14 +414,18 @@ public class MessagingService {
             a.setAppErrorId(UUID.randomUUID().toString());
             a.setDeviceType("Backend MessagingService");
             appErrorRepository.insert(a);
-            logger.info(".... zzzzzzzz .... sleeping for 10 seconds to allow FCM to catch up after quota error. AppError added to Mongo");
-            Thread.sleep(10000);
+            logger.info(".... zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" +
+                    " .... sleeping for 20 seconds to allow FCM " +
+                    "to catch a breath after quota error. AppError added to Mongo");
+            Thread.sleep(20000);
         } catch (InterruptedException ex) {
             //ignore
         }
     }
 
     public void sendMessage(CommuterRequest commuterRequest) {
+        if (checkSleeping()) return;
+
         try {
             String topic = Constants.commuterRequest + commuterRequest.getAssociationId();
             Notification notification = Notification.builder()
@@ -403,6 +445,7 @@ public class MessagingService {
                 sendAssociationMessage(commuterRequest, Constants.commuterRequest, notification, token.getToken());
             }
 
+            sleeping = false;
 
         } catch (Exception e) {
             logger.error("Failed to send commuterRequest FCM message");
@@ -411,6 +454,8 @@ public class MessagingService {
     }
 
     public void sendMessage(AmbassadorPassengerCount passengerCount) {
+        if (checkSleeping()) return;
+
         try {
             String topic = Constants.passengerCount + passengerCount.getAssociationId();
             Notification notification = Notification.builder()
@@ -426,6 +471,8 @@ public class MessagingService {
             for (AssociationToken token : assTokens) {
                 sendAssociationMessage(passengerCount, Constants.passengerCount, notification, token.getToken());
             }
+            sleeping = false;
+
 
         } catch (Exception e) {
             logger.error("Failed to send passengerCount FCM message");
