@@ -2,7 +2,7 @@ package com.boha.kasietransie.filters;
 
 import com.boha.kasietransie.data.dto.User;
 import com.boha.kasietransie.data.repos.UserRepository;
-import com.boha.kasietransie.util.CustomErrorResponse;
+import com.boha.kasietransie.util.CustomResponse;
 import com.boha.kasietransie.util.E;
 import com.google.api.core.ApiFuture;
 import com.google.firebase.auth.FirebaseAuth;
@@ -136,7 +136,7 @@ public class MonitorAuthenticationFilter extends OncePerRequestFilter {
         if (url.contains("localhost") || url.contains("192.168.86.242")) {
             LOGGER.info(mm + " contextPath: " + httpServletRequest.getContextPath()
                     + E.AMP + " requestURI: " + httpServletRequest.getRequestURI() + "\n\n");
-            LOGGER.info(mm + " allowing call from " + url);
+            LOGGER.info(mm + " allowing call from " + url + " " + E.HEART_GREEN + E.HEART_GREEN + E.HEART_GREEN + E.HEART_GREEN);
 
             doFilter(httpServletRequest, httpServletResponse, filterChain);
             return true;
@@ -146,7 +146,7 @@ public class MonitorAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private static void sendError(HttpServletResponse httpServletResponse, String message) throws IOException {
-        CustomErrorResponse er = new CustomErrorResponse(403, message, DateTime.now().toDateTimeISO().toString());
+        CustomResponse er = new CustomResponse(403, message, DateTime.now().toDateTimeISO().toString());
         httpServletResponse.setStatus(403);
         httpServletResponse.getWriter().write(G.toJson(er));
     }
@@ -154,7 +154,23 @@ public class MonitorAuthenticationFilter extends OncePerRequestFilter {
     private void doFilter(@NotNull HttpServletRequest httpServletRequest,
                           @NotNull HttpServletResponse httpServletResponse,
                           FilterChain filterChain) throws IOException, ServletException {
-        filterChain.doFilter(httpServletRequest, httpServletResponse);
+
+        try {
+//            Enumeration<String> headerNames = httpServletRequest.getHeaderNames();
+//            while (headerNames.hasMoreElements()) {
+//                String key = headerNames.nextElement();
+//                String value = httpServletRequest.getHeader(key);
+//                logger.info(E.RED_DOT + " header name: " + key + E.LEAF+" value: " + value);
+//            }
+            LOGGER.info(".... handing off to filterChain ... query: " + httpServletRequest.getQueryString() );
+            filterChain.doFilter(httpServletRequest, httpServletResponse);
+            //print(httpServletRequest);
+            LOGGER.info(".... back from filterChain ...");
+
+        } catch (IOException | ServletException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
 
         if (httpServletResponse.getStatus() != 200) {
             LOGGER.info(reds + " \n" + httpServletRequest.getRequestURI() + " \uD83D\uDD37 Status Code: "
@@ -171,20 +187,22 @@ public class MonitorAuthenticationFilter extends OncePerRequestFilter {
 
     private void print(@NotNull HttpServletRequest httpServletRequest) {
         String url = httpServletRequest.getRequestURL().toString();
-        LOGGER.info(E.ANGRY + E.ANGRY + E.ANGRY + E.BELL + "Authenticating this url: " + E.BELL + " " + url);
+        LOGGER.info(E.ANGRY + E.ANGRY + E.ANGRY + E.BELL + "print this request: " + E.BELL + " " + url);
 
-        System.out.println("\uD83D\uDE21 \uD83D\uDE21 \uD83D\uDE21 \uD83D\uDE21 request header parameters ...");
-        Enumeration<String> parms = httpServletRequest.getParameterNames();
-        while (parms.hasMoreElements()) {
-            String m = parms.nextElement();
+        LOGGER.info("\uD83D\uDE21 \uD83D\uDE21 \uD83D\uDE21 \uD83D\uDE21 request header parameters ...");
+        Enumeration<String> params = httpServletRequest.getParameterNames();
+        while (params.hasMoreElements()) {
+            String m = params.nextElement();
             LOGGER.info("\uD83D\uDE21 \uD83D\uDE21 \uD83D\uDE21 parameterName: " + m);
 
         }
-        LOGGER.info("\uD83D\uDE21 \uD83D\uDE21 headers ...");
+        LOGGER.info("\uD83D\uDE21 \uD83D\uDE21 headers ...\n");
         Enumeration<String> names = httpServletRequest.getHeaderNames();
         while (names.hasMoreElements()) {
             String m = names.nextElement();
-            LOGGER.info("\uD83D\uDE21 \uD83D\uDE21 \uD83D\uDE21 headerName: " + m);
+            String v = httpServletRequest.getHeader(m);
+            LOGGER.info("\uD83D\uDE21 \uD83D\uDE21 \uD83D\uDE21 headerName: "
+                    + E.BLUE_BIRD + " " + m + " value: " + v);
         }
         LOGGER.info("\uD83D\uDC9A \uD83D\uDC9A \uD83D\uDC9A Authorization: "
                 + httpServletRequest.getHeader("Authorization") + " \uD83D\uDC9A \uD83D\uDC9A");

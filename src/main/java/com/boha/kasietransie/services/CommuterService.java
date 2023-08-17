@@ -18,6 +18,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -215,7 +216,8 @@ public class CommuterService {
         return list;
     }
 
-    public List<CommuterRequest> generateRouteCommuterRequests(
+    @Async
+    public void generateRouteCommuterRequests(
             String routeId, int intervalInSeconds, int numberOfCommuters) {
         logger.info(E.HAND2 + E.HAND2 + E.HAND2 + " generateRouteCommuterRequests  ...");
 
@@ -225,7 +227,7 @@ public class CommuterService {
             route = routes.get(0);
         }
         if (route == null) {
-            return new ArrayList<>();
+            return;
         }
 
         List<Commuter> commuters = commuterRepository.findAll();
@@ -239,6 +241,10 @@ public class CommuterService {
 
         for (int i = 0; i < numberOfCommuters; i++) {
             for (Commuter commuter : commuters) {
+                int k = random.nextInt(100);
+                if (k > 70) {
+                    continue;
+                }
                 int landmarkIndex = random.nextInt(routeLandmarks.size() - 1);
                 RouteLandmark mark = routeLandmarks.get(landmarkIndex);
                 int passengers = random.nextInt(16);
@@ -263,23 +269,27 @@ public class CommuterService {
                 CommuterRequest request = addCommuterRequest(cr);
                 commuterRequests.add(request);
                 //
-                int addMin = random.nextInt(5);
-                if (addMin == 0) {
-                    addMin = 1;
-                }
-                minutesAgo = minutesAgo.plusMinutes(addMin);
-                try {
-                    Thread.sleep(intervalInSeconds * 1000L);
-                } catch (InterruptedException e) {
-                    //ignore
-                }
+                minutesAgo = getDateTime(intervalInSeconds, minutesAgo);
             }
         }
 
         logger.info(E.LEAF + E.LEAF + " commuter requests added: "
                 + " route: " + route.getName() + " at: " + commuterRequests.size() + " requests generated"
                 + " " + E.FLOWER_RED);
-        return commuterRequests;
+    }
+
+    private DateTime getDateTime(int intervalInSeconds, DateTime minutesAgo) {
+        int addMin = random.nextInt(5);
+        if (addMin == 0) {
+            addMin = 1;
+        }
+        minutesAgo = minutesAgo.plusMinutes(addMin);
+        try {
+            Thread.sleep(intervalInSeconds * 1000L);
+        } catch (InterruptedException e) {
+            //ignore
+        }
+        return minutesAgo;
     }
 
     public Position getRandomPosition(Position pos) {
@@ -308,30 +318,6 @@ public class CommuterService {
 
         double newCoordinate = coordRad + distanceRad;
         return toDegrees(newCoordinate);
-    }
-    public List<CommuterRequest> generateCommuterRequests(
-            String associationId, int intervalInSeconds, int numberOfCommuters) {
-
-        List<CommuterRequest> commuterRequests = new ArrayList<>();
-        List<Route> routes = routeService.getAssociationRoutes(associationId);
-        List<Route> filteredRoutes = new ArrayList<>();
-        for (Route route : routes) {
-            long cnt = mongoTemplate.count(query(
-                    where("routeId").is(route.getRouteId())), RouteLandmark.class);
-            if (cnt > 0) {
-                filteredRoutes.add(route);
-            }
-        }
-        for (Route route : filteredRoutes) {
-            List<CommuterRequest> list = generateRouteCommuterRequests(route.getRouteId(), intervalInSeconds, numberOfCommuters);
-            commuterRequests.addAll(list);
-        }
-
-        //
-        logger.info(E.LEAF + E.LEAF + " commuter requests added: " + commuterRequests.size()
-                + " " + E.BLUE_BIRD);
-
-        return commuterRequests;
     }
 
     private double toRadians(double degree) {

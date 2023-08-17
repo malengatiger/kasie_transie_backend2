@@ -1,5 +1,6 @@
 package com.boha.kasietransie.services;
 
+import com.boha.kasietransie.data.RouteAssignmentList;
 import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.data.repos.*;
 import com.boha.kasietransie.util.Constants;
@@ -62,6 +63,7 @@ public class VehicleService {
     final MessagingService messagingService;
     final RouteService routeService;
     final RouteRepository routeRepository;
+    final RouteAssignmentRepository routeAssignmentRepository;
 
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private static final Logger logger = Logger.getLogger(VehicleService.class.getSimpleName());
@@ -76,6 +78,23 @@ public class VehicleService {
 
     Random random = new Random(System.currentTimeMillis());
 
+    public List<RouteAssignment> addRouteAssignments(RouteAssignmentList list) {
+        List<RouteAssignment> mList = new ArrayList<>();
+        for (RouteAssignment assignment : list.getAssignments()) {
+            Query q = new Query(Criteria.where("routeId").is(assignment.getRouteId()));
+            q.addCriteria(Criteria.where("vehicleId").is(assignment.getVehicleId()));
+            mongoTemplate.findAndRemove(q, RouteAssignment.class);
+            RouteAssignment ra = routeAssignmentRepository.insert(assignment);
+            mList.add(ra);
+        }
+        return mList;
+    }
+    public List<RouteAssignment> getVehicleRouteAssignments(String vehicleId) {
+        return routeAssignmentRepository.findByVehicleId(vehicleId);
+    }
+    public List<RouteAssignment> getRouteAssignments(String routeId) {
+        return routeAssignmentRepository.findByRouteId(routeId);
+    }
     public List<Vehicle> getCars(List<Vehicle> list, int numberOfCars) {
         List<Vehicle> map = new ArrayList<>();
         for (Vehicle vehicle : list) {

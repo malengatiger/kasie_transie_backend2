@@ -12,7 +12,10 @@ import com.google.gson.GsonBuilder;
 import org.joda.time.DateTime;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -40,7 +43,8 @@ public class AssociationService {
     private final CityRepository cityRepository;
     private final SettingsModelRepository settingsModelRepository;
     private final ResourceLoader resourceLoader;
-
+final AssociationTokenRepository associationTokenRepository;
+final MongoTemplate mongoTemplate;
 
     public AssociationService(AppErrorRepository appErrorRepository,
                               AssociationRepository associationRepository,
@@ -50,7 +54,7 @@ public class AssociationService {
                               CityRepository cityRepository,
                               SettingsModelRepository settingsModelRepository,
                               ResourceLoader resourceLoader,
-                              MongoTemplate mongoTemplate) {
+                              MongoTemplate mongoTemplate, AssociationTokenRepository associationTokenRepository, MongoTemplate mongoTemplate1) {
         this.appErrorRepository = appErrorRepository;
         this.associationRepository = associationRepository;
         this.userService = userService;
@@ -59,9 +63,12 @@ public class AssociationService {
         this.cityRepository = cityRepository;
         this.settingsModelRepository = settingsModelRepository;
         this.resourceLoader = resourceLoader;
+        this.associationTokenRepository = associationTokenRepository;
+        this.mongoTemplate = mongoTemplate1;
         logger.info(MM + " AssociationService constructed ");
 
     }
+
 
     //    @Transactional
     public RegistrationBag registerAssociation(Association association) throws Exception {

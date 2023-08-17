@@ -1,9 +1,6 @@
 package com.boha.kasietransie.services;
 
-import com.boha.kasietransie.data.BigBag;
-import com.boha.kasietransie.data.CounterBag;
-import com.boha.kasietransie.data.DispatchRecordList;
-import com.boha.kasietransie.data.VehicleBag;
+import com.boha.kasietransie.data.*;
 import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.data.repos.*;
 import com.boha.kasietransie.util.E;
@@ -459,8 +456,30 @@ public class DispatchService {
         return vehicleDepartureRepository.findByVehicleId(vehicleId);
     }
 
-    public List<VehicleDeparture> getAssociationVehicleDepartures(String associationId) {
-        return vehicleDepartureRepository.findByAssociationId(associationId);
+    public List<VehicleDeparture> getAssociationVehicleDepartures(String associationId, String startDate) {
+        Criteria c = Criteria.where("associationId").is(associationId)
+                .and("created").gte(startDate);
+        Query query = new Query(c);
+        return mongoTemplate.find(query, VehicleDeparture.class);
+    }
+
+    public AssociationBag getAssociationBag(String associationId, String startDate) {
+        logger.info(E.GLOBE+" getAssociationBag starting ...");
+        AssociationBag bag = new AssociationBag();
+        bag.setDepartures(getAssociationVehicleDepartures(associationId, startDate));
+        bag.setHeartbeats(heartbeatService.getAssociationVehicleHeartbeats(associationId,startDate));
+        bag.setDispatchRecords(getAssociationDispatchRecords(associationId,startDate));
+        bag.setPassengerCounts(ambassadorService.getAssociationAmbassadorPassengerCounts(associationId,startDate));
+        bag.setArrivals(getAssociationVehicleArrivals(associationId,startDate));
+        String sb = E.LEAF + E.LEAF + E.LEAF + " Association Bag:\n" +
+                "Arrivals: " + bag.getArrivals().size() + "\n" +
+                "Departures: " + bag.getDepartures().size() + "\n" +
+                "Dispatch Records: " + bag.getDispatchRecords().size() + "\n" +
+                "PassengerCounts: " + bag.getPassengerCounts().size() + "\n" +
+                "Heartbeats: " + bag.getHeartbeats().size() + "\n";
+
+        logger.info(sb);
+        return bag;
     }
 
     public String fixOwnerToPassengerCounts(String userId, String ownerId, String ownerName) {
@@ -482,7 +501,6 @@ public class DispatchService {
     public void generateRouteDispatchRecords(Route route,
                                              Vehicle vehicle,
                                              List<RouteLandmark> routeLandmarks,
-                                             List<RoutePoint> routePoints,
                                              List<User> users,
                                              int intervalInSeconds) {
 
@@ -492,12 +510,12 @@ public class DispatchService {
         List<DispatchRecord> dispatchRecords = new ArrayList<>();
 
         DateTime minutesAgo = DateTime.now().toDateTimeISO().minusHours(1);
-        logger.info(E.BLUE_DOT + route.getName() + " will be used for "
+        logger.info("\n\n"+E.BLUE_DOT + route.getName() + " will be used for "
                 + vehicle.getVehicleReg() + " starting at: " + minutesAgo +
                 " number of routeLandmarks on route: " + routeLandmarks.size());
-        RouteLandmark prevRouteLandmark = null;
+
         AmbassadorPassengerCount previousAPC = null;
-        AmbassadorPassengerCount originAPC = null;
+
 
         int index = 0;
         for (RouteLandmark mark : routeLandmarks) {
@@ -513,29 +531,18 @@ public class DispatchService {
                             mark, users.get(0), dr.getPassengers());
                 }
 
-                // generate heartbeats up to next landmark
-                List<RoutePoint> points = getRoutePointsBetweenLandmarks(routePoints, prevRouteLandmark, mark);
-                if (!points.isEmpty()) {
-                    List<Integer> indices = vehicleService.getSortedIndices(points);
-                    handleHeartbeats(points, vehicle, minutesAgo, indices, intervalInSeconds / 2);
-                }
                 AmbassadorPassengerCount count = generateAmbassadorPassengerCount(vehicle, routeLandmarks,
                         users, minutesAgo, previousAPC, mark);
 
+                minutesAgo = handleDateAndSleep(minutesAgo, intervalInSeconds / 2);
+
+                generateDeparture(vehicle,mark, minutesAgo);
+
                 logger.info(E.CROISSANT + " apc: getCurrentPassengers: " + count.getCurrentPassengers());
                 previousAPC = count;
-                prevRouteLandmark = mark;
                 minutesAgo = handleDateAndSleep(minutesAgo, intervalInSeconds / 2);
                 index++;
-                //add heartbeat at last landmark ....
-                if (index == routeLandmarks.size()) {
-                    heartbeatService.addVehicleHeartbeat(getVehicleHeartbeat(
-                            vehicle, minutesAgo, mark.getPosition()));
-                    logger.info(E.FROG + E.FROG + E.FROG + E.FROG +
-                            " last landmark heartbeat added: " + vehicle.getVehicleReg()
-                            + " " + mark.getLandmarkName() + " on " + mark.getRouteName());
 
-                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -544,7 +551,27 @@ public class DispatchService {
                 + E.FLOWER_RED + " " + dispatchRecords.size() + " route: " + route.getName());
     }
 
-    private AmbassadorPassengerCount generateAmbassadorPassengerCount(Vehicle vehicle,
+    private void generateDeparture(Vehicle vehicle, RouteLandmark mark, DateTime minutesAgo) {
+        VehicleDeparture d = new VehicleDeparture();
+        d.setVehicleDepartureId(UUID.randomUUID().toString());
+        d.setCreated(minutesAgo.plusMinutes(random.nextInt(10)).toDateTimeISO().toString());
+        d.setMake(vehicle.getMake());
+        d.setModel(vehicle.getModel());
+        d.setOwnerId(vehicle.getOwnerId());
+        d.setOwnerName(vehicle.getOwnerName());
+        d.setAssociationId(vehicle.getAssociationId());
+        d.setAssociationName(vehicle.getAssociationName());
+        d.setLandmarkId(mark.getLandmarkId());
+        d.setLandmarkName(mark.getLandmarkName());
+        d.setPosition(mark.getPosition());
+        d.setVehicleId(vehicle.getVehicleId());
+        d.setVehicleReg(vehicle.getVehicleReg());
+
+        addVehicleDeparture(d);
+        logger.info("Vehicle departure: " + vehicle.getVehicleReg() + " from " + mark.getLandmarkName());
+    }
+
+    public AmbassadorPassengerCount generateAmbassadorPassengerCount(Vehicle vehicle,
                                                                       List<RouteLandmark> routeLandmarks,
                                                                       List<User> users, DateTime minutesAgo,
                                                                       AmbassadorPassengerCount previousAPC,
@@ -706,7 +733,7 @@ public class DispatchService {
                 + " at landmark: " + va.getLandmarkName() + " " + E.BLUE_BIRD);
     }
 
-    private static DispatchRecord getDispatchRecord(Vehicle vehicle, DateTime minutesAgo, RouteLandmark mark, User user) {
+    public static DispatchRecord getDispatchRecord(Vehicle vehicle, DateTime minutesAgo, RouteLandmark mark, User user) {
         DispatchRecord dp = new DispatchRecord();
         dp.setDispatched(true);
         dp.setMarshalId(user.getUserId());

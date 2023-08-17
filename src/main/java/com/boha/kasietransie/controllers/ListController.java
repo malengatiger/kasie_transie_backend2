@@ -1,12 +1,9 @@
 package com.boha.kasietransie.controllers;
 
-import com.boha.kasietransie.data.BigBag;
-import com.boha.kasietransie.data.CounterBag;
-import com.boha.kasietransie.data.RouteBag;
-import com.boha.kasietransie.data.VehicleBag;
+import com.boha.kasietransie.data.*;
 import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.services.*;
-import com.boha.kasietransie.util.CustomErrorResponse;
+import com.boha.kasietransie.util.CustomResponse;
 import com.boha.kasietransie.util.E;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -56,7 +53,7 @@ public class ListController {
             return ResponseEntity.ok(objects);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getRoutePointAggregate failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -65,11 +62,13 @@ public class ListController {
     @GetMapping("/getUserById")
     public ResponseEntity<Object> getUserById(@RequestParam String userId) {
         try {
+            logger.info(E.BLUE_DOT + " find user by id: " + userId);
             User user = userService.getUserById(userId);
             return ResponseEntity.ok(user);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getUserById failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -86,7 +85,7 @@ public class ListController {
             return ResponseEntity.ok(user);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getUserByEmail failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -99,7 +98,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getAssociationById failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -113,7 +112,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getAssociationSettingsModels failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -127,7 +126,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getAssociationRoutes failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -142,7 +141,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getAssociationRoutes failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -156,7 +155,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getAssociationVehicles failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -170,7 +169,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getAssociations failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -178,15 +177,30 @@ public class ListController {
 
     @GetMapping("/getAssociationVehicleHeartbeats")
     public ResponseEntity<Object> getAssociationVehicleHeartbeats(@RequestParam String associationId,
-                                                                  @RequestParam int cutoffHours) {
+                                                                  @RequestParam String startDate) {
         try {
             List<VehicleHeartbeat> ass = heartbeatService
-                    .getAssociationVehicleHeartbeats(associationId, cutoffHours);
+                    .getAssociationVehicleHeartbeats(associationId, startDate);
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getAssociationVehicleHeartbeats failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+    }
+
+    @GetMapping("/getAssociationBag")
+    public ResponseEntity<Object> getAssociationBag(@RequestParam String associationId,
+                                                    @RequestParam String startDate) {
+        try {
+            AssociationBag ass = dispatchService
+                    .getAssociationBag(associationId, startDate);
+            return ResponseEntity.ok(ass);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomResponse(400,
+                            "getAssociationBag failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
     }
@@ -200,7 +214,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getVehicleHeartbeats failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -215,7 +229,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getOwnerVehicleHeartbeats failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -229,7 +243,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getAssociationAppErrors failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -243,7 +257,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getRoutePoints failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -257,7 +271,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getAssociationRoutePoints failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -271,7 +285,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getAssociationRouteCities failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -285,7 +299,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getAssociationRouteLandmarks failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -299,7 +313,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getRouteCities failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -313,7 +327,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getMarshalDispatchRecords failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -327,7 +341,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getAssociationAmbassadorCheckIn failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -341,7 +355,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getVehicleAmbassadorCheckIn failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -355,7 +369,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getUserAmbassadorCheckIn failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -369,11 +383,12 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getAssociationAmbassadorPassengerCounts failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/getRoutePassengerCounts")
     public ResponseEntity<Object> getRoutePassengerCounts(
             @RequestParam String routeId, @RequestParam String startDate) {
@@ -383,11 +398,12 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getRoutePassengerCounts failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/getAssociationCommuterRequests")
     public ResponseEntity<Object> getAssociationCommuterRequests(
             @RequestParam String associationId, @RequestParam String startDate) {
@@ -397,11 +413,12 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getAssociationCommuterRequests failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/getRouteCommuterRequests")
     public ResponseEntity<Object> getRouteCommuterRequests(
             @RequestParam String routeId, @RequestParam String startDate) {
@@ -411,11 +428,12 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getRouteCommuterRequests failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/getRouteDispatchRecords")
     public ResponseEntity<Object> getRouteDispatchRecords(
             @RequestParam String routeId, @RequestParam String startDate) {
@@ -425,11 +443,12 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getRouteDispatchRecords failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/getAssociationDispatchRecords")
     public ResponseEntity<Object> getAssociationDispatchRecords(
             @RequestParam String associationId, @RequestParam String startDate) {
@@ -439,11 +458,12 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getAssociationDispatchRecords failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/getAssociationVehicleArrivals")
     public ResponseEntity<Object> getAssociationVehicleArrivals(
             @RequestParam String associationId, @RequestParam String startDate) {
@@ -453,11 +473,12 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getAssociationVehicleArrivals failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/getRouteVehicleArrivals")
     public ResponseEntity<Object> getRouteVehicleArrivals(
             @RequestParam String routeId, @RequestParam String startDate) {
@@ -467,7 +488,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getRouteVehicleArrivals failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -481,7 +502,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getUserAmbassadorPassengerCounts failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -495,8 +516,50 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getVehicleAmbassadorPassengerCounts failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+    }
+
+    @GetMapping("/getVehicleRouteAssignments")
+    public ResponseEntity<Object> getVehicleRouteAssignments(
+            @RequestParam String vehicleId) {
+        try {
+            List<RouteAssignment> ass = vehicleService
+                    .getVehicleRouteAssignments(vehicleId);
+            return ResponseEntity.ok(ass);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomResponse(400,
+                            "getVehicleRouteAssignments failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+    }
+
+    @GetMapping(value = "/getAssociationRouteZippedFile", produces = "application/zip")
+    public byte[] getAssociationRouteZippedFile(@RequestParam String associationId) throws Exception {
+        logger.info(E.PANDA + E.PANDA + " ListController getAssociationRouteZippedFile ");
+
+        File zippedFile = routeService.getAssociationRouteZippedFile(associationId);
+        byte[] bytes = java.nio.file.Files.readAllBytes(zippedFile.toPath());
+        boolean deleted = zippedFile.delete();
+
+        logger.info(E.PANDA + E.PANDA + " zipped project file deleted : " + deleted);
+        return bytes;
+    }
+
+    @GetMapping("/getRouteAssignments")
+    public ResponseEntity<Object> getRouteAssignments(
+            @RequestParam String routeId) {
+        try {
+            List<RouteAssignment> ass = vehicleService
+                    .getRouteAssignments(routeId);
+            return ResponseEntity.ok(ass);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomResponse(400,
+                            "getRouteAssignments failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
     }
@@ -509,7 +572,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getOwnersBag failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -524,7 +587,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getVehicleCounts failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -539,7 +602,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getVehicleCountsByDate failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -549,12 +612,12 @@ public class ListController {
     public ResponseEntity<Object> getVehicleBag(
             @RequestParam String vehicleId, @RequestParam String startDate) {
         try {
-           VehicleBag ass = dispatchService
+            VehicleBag ass = dispatchService
                     .getVehicleBag(vehicleId, startDate);
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getVehicleBag failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -568,7 +631,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "countVehicleArrivals failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -582,7 +645,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "countVehicleDepartures failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -596,7 +659,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "countVehicleDispatches failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -610,7 +673,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "countVehicleHeartbeats failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -624,7 +687,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getOwnerVehicles failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -645,7 +708,7 @@ public class ListController {
             return ResponseEntity.ok(file);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "downloadExampleVehiclesFile failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -666,7 +729,7 @@ public class ListController {
             return ResponseEntity.ok(file);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "downloadExampleVehiclesFile failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -680,7 +743,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getVehicleMediaRequests failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -695,7 +758,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getAssociationVehicleMediaRequests failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -709,7 +772,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getVehiclePhotos failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -723,7 +786,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getVehicleVideos failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -738,7 +801,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getCalculatedDistances failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -752,7 +815,7 @@ public class ListController {
             return ResponseEntity.ok(bag);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "refreshRoute failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -766,7 +829,7 @@ public class ListController {
             return ResponseEntity.ok(ass);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getCountryStates failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -783,7 +846,7 @@ public class ListController {
             return ResponseEntity.ok(cities);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(500,
+                    new CustomResponse(500,
                             "findCitiesByLocation failed: "
                                     + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
@@ -799,7 +862,7 @@ public class ListController {
             return ResponseEntity.ok(r);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "findRoutesByLocation failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -816,7 +879,7 @@ public class ListController {
             return ResponseEntity.ok(r);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "findRouteLandmarksByLocation failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -837,7 +900,7 @@ public class ListController {
             return ResponseEntity.ok(r);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "findAssociationVehiclesByLocationAndTime failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -857,7 +920,7 @@ public class ListController {
             return ResponseEntity.ok(r);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "findOwnerVehiclesByLocationAndTime failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -875,7 +938,7 @@ public class ListController {
             return ResponseEntity.ok(r);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "findAssociationRouteLandmarksByLocation failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -892,7 +955,7 @@ public class ListController {
             return ResponseEntity.ok(r);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "findLandmarksByLocation failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -905,7 +968,7 @@ public class ListController {
             return ResponseEntity.ok(r);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getRouteLandmarks failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -918,7 +981,7 @@ public class ListController {
             return ResponseEntity.ok(r);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getRouteUpdateRequests failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -933,7 +996,7 @@ public class ListController {
             return ResponseEntity.ok(r);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "findAssociationRoutesByLocation failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -946,7 +1009,7 @@ public class ListController {
             return ResponseEntity.ok(cities);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getCountryCities failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
@@ -959,7 +1022,7 @@ public class ListController {
             return ResponseEntity.ok(cities);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new CustomErrorResponse(400,
+                    new CustomResponse(400,
                             "getCountries failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }

@@ -211,12 +211,21 @@ public class UserService {
         return resultUsers;
     }
 
-    public User getUserById(String userId) {
-        List<User> list = userRepository.findByUserId(userId);
-        if (list.isEmpty()) {
-            throw new NoSuchElementException();
+    public User getUserById(String userId) throws Exception {
+        logger.info(E.BLUE_DOT+" getUserById: " + userId);
+        User user;
+        try {
+            List<User> list = userRepository.findByUserId(userId);
+            if (list.isEmpty()) {
+                throw new Exception("User not found");
+            }
+            user = list.get(0);
+            logger.info(E.ANGRY + " user: " + gson.toJson(user));
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-        return list.get(0);
+        return user;
     }
 
     public User getUserByEmail(String email) {

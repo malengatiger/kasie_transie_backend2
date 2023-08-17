@@ -129,12 +129,5 @@ public class MongoConfig  {
         return secretPayload;
     }
 
-//    @Bean
-//    MongoTransactionManager transactionManager(MongoDatabaseFactory dbFactory) {
-//        return new MongoTransactionManager(dbFactory);
-//    }
-//    @Override
-//    public String getDatabaseName() {
-//        return databaseName;
-//    }
+
 }

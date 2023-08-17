@@ -28,6 +28,7 @@ public class VehicleHeartbeat {
     long  longDate;
     String  make;
     String  model;
+    boolean appToBackground = false;
 
     private static final Logger logger = Logger.getLogger(VehicleHeartbeat.class.getSimpleName());
     private static final String XX = E.COFFEE + E.COFFEE + E.COFFEE;

@@ -15,6 +15,7 @@ import com.google.zxing.qrcode.QRCodeWriter;
 import com.mongodb.WriteConcern;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.result.DeleteResult;
+import org.joda.time.DateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -35,9 +36,11 @@ import org.springframework.stereotype.Service;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -45,6 +48,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.*;
 
@@ -557,6 +562,55 @@ public class RouteService {
 
         }
         return routeFilteredLandmarks;
+    }
+
+    public File getAssociationRouteZippedFile(String associationId) throws Exception {
+        logger.info(E.PANDA + E.PANDA + " getAssociationRouteZippedFile starting associationId: " + associationId);
+
+        long start = System.currentTimeMillis();
+        List<RouteBag> routeBags = new ArrayList<>();
+        List<Route> routes = routeRepository.findByAssociationId(associationId);
+        for (Route route : routes) {
+            List<RouteLandmark> routeLandmarks = routeLandmarkRepository.findByRouteId(route.getRouteId());
+            List<RoutePoint> points = routePointRepository.findByRouteId(route.getRouteId());
+            List<RouteCity> cities = routeCityRepository.findByRouteId(route.getRouteId());
+
+            routeBags.add(new RouteBag(route,routeLandmarks,points,cities));
+
+        }
+
+        String json = gson.toJson(routeBags);
+
+        DecimalFormat decimalFormat = new DecimalFormat("#.##");
+        decimalFormat.setGroupingUsed(true);
+        decimalFormat.setGroupingSize(3);
+
+        logger.info(E.RED_DOT + E.RED_DOT + " Before zip: " + decimalFormat.format(json.length()) + " bytes in json");
+
+        File dir = new File("zipDirectory");
+        if (!dir.exists()) {
+            boolean ok = dir.mkdir();
+            logger.info( " Zip directory created: path: " + dir.getAbsolutePath() + " created: " + ok);
+        }
+        File zippedFile = new File(dir, DateTime.now().getMillis() + ".zip");
+        ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zippedFile));
+        ZipEntry e = new ZipEntry("routeBag");
+        out.putNextEntry(e);
+
+        byte[] data = json.getBytes();
+        out.write(data, 0, data.length);
+        out.closeEntry();
+
+        out.close();
+        long end = System.currentTimeMillis();
+        long ms = (end - start);
+        double elapsed = Double.parseDouble("" + ms) / Double.parseDouble("1000");
+
+        logger.info(E.RED_DOT + E.RED_DOT + " After zip: "
+                + decimalFormat.format(zippedFile.length()) + " bytes in file, elapsed: "
+                + E.RED_APPLE + " " + elapsed + " seconds");
+
+        return zippedFile;
     }
 
 }

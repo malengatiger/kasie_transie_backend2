@@ -41,7 +41,17 @@ public class AmbassadorPassengerCount {
                 db.getCollection(AmbassadorPassengerCount.class.getSimpleName());
 
         dbCollection.createIndex(
-                Indexes.ascending( "created","associationId", "vehicleId", "userId", "routeId"));
+                Indexes.ascending( "created"));
+
+        dbCollection.createIndex(
+                Indexes.ascending( "associationId"));
+
+        dbCollection.createIndex(
+                Indexes.ascending(  "routeId"));
+
+        dbCollection.createIndex(
+                Indexes.ascending(  "vehicleId"));
+
 
         logger.info(XX + "AmbassadorPassengerCount indexes done");
     }

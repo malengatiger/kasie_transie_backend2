@@ -13,4 +13,14 @@ public class RouteBag {
     List<RouteLandmark> routeLandmarks;
     List<RoutePoint> routePoints;
     List<RouteCity> routeCities;
+
+    public RouteBag() {
+    }
+
+    public RouteBag(Route route, List<RouteLandmark> routeLandmarks, List<RoutePoint> routePoints, List<RouteCity> routeCities) {
+        this.route = route;
+        this.routeLandmarks = routeLandmarks;
+        this.routePoints = routePoints;
+        this.routeCities = routeCities;
+    }
 }

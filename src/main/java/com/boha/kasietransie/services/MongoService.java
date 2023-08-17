@@ -511,6 +511,7 @@ public class MongoService {
             AmbassadorCheckIn.createIndex(db);
             Commuter.createIndex(db);
             CommuterRequest.createIndex(db);
+            RouteAssignment.createIndex(db);
 
             logger.info(XX + " MongoService has completed setup of indexes " + E.BELL + E.BELL);
 
