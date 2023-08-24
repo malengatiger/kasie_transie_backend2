@@ -12,4 +12,5 @@ public class AssociationBag {
     List<VehicleArrival> arrivals;
     List<VehicleDeparture> departures;
     List<DispatchRecord> dispatchRecords;
+    List<CommuterRequest> commuterRequests;
 }

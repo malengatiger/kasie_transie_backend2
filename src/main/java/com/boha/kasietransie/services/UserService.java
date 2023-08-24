@@ -213,7 +213,7 @@ public class UserService {
 
     public User getUserById(String userId) throws Exception {
         logger.info(E.BLUE_DOT+" getUserById: " + userId);
-        User user;
+        User user = null;
         try {
             List<User> list = userRepository.findByUserId(userId);
             if (list.isEmpty()) {
@@ -223,7 +223,11 @@ public class UserService {
             logger.info(E.ANGRY + " user: " + gson.toJson(user));
         } catch (Exception e) {
             e.printStackTrace();
-            throw new RuntimeException(e);
+            if (e.getMessage().contains("Exception sending message")) {
+                getUserById(userId);
+            } else {
+            throw new Exception(e);
+            }
         }
         return user;
     }

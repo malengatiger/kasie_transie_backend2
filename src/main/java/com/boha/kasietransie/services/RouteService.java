@@ -2,6 +2,7 @@ package com.boha.kasietransie.services;
 
 import com.boha.kasietransie.data.CalculatedDistanceList;
 import com.boha.kasietransie.data.RouteBag;
+import com.boha.kasietransie.data.RouteBagList;
 import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.data.repos.*;
 import com.boha.kasietransie.util.E;
@@ -565,7 +566,8 @@ public class RouteService {
     }
 
     public File getAssociationRouteZippedFile(String associationId) throws Exception {
-        logger.info(E.PANDA + E.PANDA + " getAssociationRouteZippedFile starting associationId: " + associationId);
+        logger.info(E.PANDA + E.PANDA +E.PANDA +E.PANDA +
+                " getAssociationRouteZippedFile starting associationId: " + associationId);
 
         long start = System.currentTimeMillis();
         List<RouteBag> routeBags = new ArrayList<>();
@@ -578,8 +580,9 @@ public class RouteService {
             routeBags.add(new RouteBag(route,routeLandmarks,points,cities));
 
         }
-
-        String json = gson.toJson(routeBags);
+        RouteBagList routeBagList = new RouteBagList();
+        routeBagList.setRouteBags(routeBags);
+        String json = gson.toJson(routeBagList);
 
         DecimalFormat decimalFormat = new DecimalFormat("#.##");
         decimalFormat.setGroupingUsed(true);

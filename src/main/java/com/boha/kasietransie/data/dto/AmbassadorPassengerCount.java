@@ -28,6 +28,7 @@ public class AmbassadorPassengerCount {
     String routeLandmarkName;
     String ownerId;
     String ownerName;
+    String passengerCountId;
     int passengersIn;
     int passengersOut;
     int currentPassengers;

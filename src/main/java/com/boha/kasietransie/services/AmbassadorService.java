@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 import static org.springframework.data.mongodb.core.query.Criteria.where;
@@ -255,7 +256,7 @@ public class AmbassadorService {
                                                                 RouteLandmark mark) {
         int userIndex = random.nextInt(users.size() - 1);
         User user = users.get(userIndex);
-        int initialPassengers = random.nextInt(20);
+        int initialPassengers = random.nextInt(16);
         if (initialPassengers == 0) initialPassengers = 16;
         //
         AmbassadorPassengerCount apc = new AmbassadorPassengerCount();
@@ -272,15 +273,17 @@ public class AmbassadorService {
         apc.setUserName(user.getName());
         apc.setRouteLandmarkId(mark.getLandmarkId());
         apc.setRouteLandmarkName(mark.getLandmarkName());
+        apc.setPassengerCountId(UUID.randomUUID().toString());
 
         if (landmarkIndex == 0) {
             apc.setPassengersOut(0);
             apc.setPassengersIn(initialPassengers);
             apc.setCurrentPassengers(initialPassengers);
         } else {
-            int passengersIn = random.nextInt(6);
+            int passengersIn = random.nextInt(16);
+            if (passengersIn < 2) passengersIn = 6;
             apc.setPassengersIn(passengersIn);
-            int passengersOut = random.nextInt(6);
+            int passengersOut = random.nextInt(12);
             apc.setPassengersOut(passengersOut);
             if (previousAPC != null) {
                 int count = getCurrentPassengers(apc.getPassengersIn(), apc.getPassengersOut(),

@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -537,7 +538,7 @@ public class ListController {
         }
     }
 
-    @GetMapping(value = "/getAssociationRouteZippedFile", produces = "application/zip")
+    @GetMapping(value = "/getAssociationRouteZippedFile")
     public byte[] getAssociationRouteZippedFile(@RequestParam String associationId) throws Exception {
         logger.info(E.PANDA + E.PANDA + " ListController getAssociationRouteZippedFile ");
 
@@ -680,7 +681,8 @@ public class ListController {
     }
 
     @GetMapping("/getOwnerVehicles")
-    public ResponseEntity<Object> getOwnerVehicles(@RequestParam String userId, @RequestParam int page) {
+    public ResponseEntity<Object> getOwnerVehicles(@RequestParam String userId,
+                                                   @RequestParam int page) {
         try {
             List<Vehicle> ass = vehicleService
                     .getOwnerVehicles(userId, page);
@@ -1002,6 +1004,24 @@ public class ListController {
         }
     }
 
+    @GetMapping("/getCountryCitiesZippedFile")
+    public byte[]  getCountryCitiesZippedFile(@RequestParam String countryId) throws Exception {
+
+            File cities = cityService.getCountryCitiesZippedFile(countryId);
+            byte[] bytes = java.nio.file.Files.readAllBytes(cities.toPath());
+            cities.delete();
+            return bytes;
+
+    }
+    @GetMapping("/getVehiclesZippedFile")
+    public byte[]  getVehiclesZippedFile(@RequestParam String associationId) throws Exception {
+
+        File zippedFile = vehicleService.getVehiclesZippedFile(associationId);
+        byte[] bytes = java.nio.file.Files.readAllBytes(zippedFile.toPath());
+        zippedFile.delete();
+        return bytes;
+
+    }
     @GetMapping("/getCountryCities")
     public ResponseEntity<Object> getCountryCities(@RequestParam String countryId, int page) {
         try {

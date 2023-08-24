@@ -44,7 +44,7 @@ public class MessagingService {
                 .is(associationId)).with(Sort.by(Sort.Direction.DESC, "created"));
 
         List<AssociationToken> list = mongoTemplate.find(q, AssociationToken.class);
-        logger.info(E.HAND1 + E.HAND2 + " Association tokens found: " + list.size());
+        //logger.info(E.HAND1 + E.HAND2 + " Association tokens found: " + list.size());
         return list;
     }
 
@@ -383,8 +383,8 @@ public class MessagingService {
         try {
             String topic = Constants.dispatchRecord + dispatchRecord.getAssociationId();
             Notification notification = Notification.builder()
-                    .setBody("A Request for Vehicle Photos or Video for: " + dispatchRecord.getVehicleReg())
-                    .setTitle("Vehicle Media Request")
+                    .setBody("Dispatch record arrived " + dispatchRecord.getVehicleReg())
+                    .setTitle("Taxi Dispatch")
                     .build();
             Message message = buildMessage(Constants.dispatchRecord, topic,
                     G.toJson(dispatchRecord));
@@ -393,7 +393,7 @@ public class MessagingService {
 
             List<AssociationToken> assTokens = getTokens(dispatchRecord.getAssociationId());
             for (AssociationToken token : assTokens) {
-                sendAssociationMessage(dispatchRecord, Constants.vehicleArrival, notification, token.getToken());
+                sendAssociationMessage(dispatchRecord, Constants.dispatchRecord, notification, token.getToken());
             }
 
             sleeping = false;

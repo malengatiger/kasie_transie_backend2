@@ -15,6 +15,8 @@ public interface CityRepository extends MongoRepository<City, String> {
 //    List<City> findByCountryId(String countryId);
     Page<City> findByCountryId(String countryId, Pageable pageable);
 
+    List<City> findByCountryId(String countryId);
+
     List<City> findByCountryName(String countryName);
 
     List<City> findByName(String name);

@@ -33,13 +33,17 @@ import org.springframework.stereotype.Service;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 import static org.springframework.data.mongodb.core.query.Query.query;
@@ -793,4 +797,45 @@ public class VehicleService {
 
         return sb.toString();
     }
+
+    public File getVehiclesZippedFile(String associationId) throws Exception {
+        logger.info(E.PANDA + E.PANDA +E.PANDA +E.PANDA +
+                " getVehiclesZippedFile, associationId: " + associationId);
+
+        long start = System.currentTimeMillis();
+        List<Vehicle> cars = vehicleRepository.findByAssociationId(associationId);
+        String json = gson.toJson(cars);
+
+        DecimalFormat decimalFormat = new DecimalFormat("#.##");
+        decimalFormat.setGroupingUsed(true);
+        decimalFormat.setGroupingSize(3);
+
+        logger.info(E.RED_DOT + E.RED_DOT + " Before zip: " + decimalFormat.format(json.length()) + " bytes in json");
+
+        File dir = new File("zipDirectory");
+        if (!dir.exists()) {
+            boolean ok = dir.mkdir();
+            logger.info( " Zip directory created: path: " + dir.getAbsolutePath() + " created: " + ok);
+        }
+        File zippedFile = new File(dir, DateTime.now().getMillis() + ".zip");
+        ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zippedFile));
+        ZipEntry e = new ZipEntry("cars");
+        out.putNextEntry(e);
+
+        byte[] data = json.getBytes();
+        out.write(data, 0, data.length);
+        out.closeEntry();
+
+        out.close();
+        long end = System.currentTimeMillis();
+        long ms = (end - start);
+        double elapsed = Double.parseDouble("" + ms) / Double.parseDouble("1000");
+
+        logger.info(E.RED_DOT + E.RED_DOT + " After zip: "
+                + decimalFormat.format(zippedFile.length()) + " bytes in file, elapsed: "
+                + E.RED_APPLE + " " + elapsed + " seconds");
+
+        return zippedFile;
+    }
+
 }

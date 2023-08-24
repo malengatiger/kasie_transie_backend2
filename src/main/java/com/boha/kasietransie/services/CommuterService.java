@@ -237,12 +237,12 @@ public class CommuterService {
 
         logger.info(E.BLUE_DOT + " commuters in play: " + commuters.size() + " commuters ...");
 
-        DateTime minutesAgo = DateTime.now().toDateTimeISO().minusHours(1);
+        DateTime minutesAgo = DateTime.now().toDateTimeISO().minusMinutes(30);
         Criteria c = Criteria.where("routeId").is(route.getRouteId());
         Query query = new Query(c).with(Sort.by("index"));
         List<RouteLandmark> routeLandmarks = mongoTemplate.find(query, RouteLandmark.class);
 
-        //generate landmark requests in parallel tasks
+        //generate landmark commuter requests in parallel tasks
         ExecutorService executorService = Executors.newFixedThreadPool(routeLandmarks.size());
         logger.info(E.DOG + E.DOG + E.DOG + " executorService newFixedThreadPool built: " + executorService);
 
@@ -267,11 +267,17 @@ public class CommuterService {
                                   DateTime minutesAgo,
                                   RouteLandmark mark) {
 
+        int wait = random.nextInt(5);
+        try {
+            Thread.sleep(wait * 1000L);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         logger.info(E.RED_DOT+E.RED_DOT+E.RED_DOT+
                 " Route landmark gonna be busy! " + mark.getLandmarkName() + " on route: "
         + mark.getRouteName());
-        int count = random.nextInt(100);
-        if (count < 10) count = 20;
+        int count = random.nextInt(5);
+        if (count < 1) count = 3;
         for (int i = 0; i < count; i++) {
             int passengers = random.nextInt(10);
             if (passengers == 0) passengers++;
@@ -289,8 +295,8 @@ public class CommuterService {
         CommuterRequest cr = new CommuterRequest();
         cr.setCommuterRequestId(UUID.randomUUID().toString());
         cr.setCommuterId(commuter.getCommuterId());
-        minutesAgo = minutesAgo.plusMinutes(random.nextInt(10));
-        cr.setDateRequested(minutesAgo.toString());
+        DateTime xDate = minutesAgo.plusMinutes(random.nextInt(10));
+        cr.setDateRequested(xDate.toString());
         cr.setAssociationId(mark.getAssociationId());
         cr.setCurrentPosition(getRandomPosition(mark.getPosition()));
         cr.setRouteId(mark.getRouteId());
@@ -307,22 +313,23 @@ public class CommuterService {
 
         try {
             addCommuterRequest(cr);
+            minutesAgo = xDate;
         } catch (Exception e) {
             e.printStackTrace();
         }
         try {
-            Thread.sleep(5000);
+            int wait = random.nextInt(10);
+            Thread.sleep(wait * 1000L);
         } catch (InterruptedException e) {
             //ignore
         }
     }
 
     public Position getRandomPosition(Position pos) {
-        int latDistance = random.nextInt(5000);
-        if (latDistance < 500) latDistance = 2000;
-        int lngDistance = random.nextInt(5000);
-        if (lngDistance < 500) lngDistance = 1500;
-
+        int dist1 = random.nextInt(5000);
+        int latDistance = random.nextInt(dist1);
+        int dist2 = random.nextInt(5000);
+        int lngDistance = random.nextInt(dist2);
         double lat = getCoordinateWithOffset(pos.getCoordinates().get(1), latDistance);
         double lng = getCoordinateWithOffset(pos.getCoordinates().get(0), lngDistance);
 

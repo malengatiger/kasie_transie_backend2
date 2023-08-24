@@ -1,9 +1,8 @@
 package com.boha.kasietransie.services;
 
-import com.boha.kasietransie.data.dto.City;
-import com.boha.kasietransie.data.dto.Country;
-import com.boha.kasietransie.data.dto.RoutePoint;
-import com.boha.kasietransie.data.dto.State;
+import com.boha.kasietransie.data.RouteBag;
+import com.boha.kasietransie.data.RouteBagList;
+import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.data.repos.CityRepository;
 import com.boha.kasietransie.data.repos.CountryRepository;
 import com.boha.kasietransie.data.repos.StateRepository;
@@ -18,6 +17,7 @@ import com.mongodb.client.model.geojson.Point;
 import com.mongodb.client.model.geojson.Position;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +29,9 @@ import org.springframework.data.geo.Metrics;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -36,6 +39,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static com.mongodb.client.model.Filters.near;
 
@@ -99,6 +104,49 @@ public class CityService {
                 + Duration.between(start, Instant.now()).toSeconds() + " seconds");
         return cities;
     }
+
+    public File getCountryCitiesZippedFile(String countryId) throws Exception {
+        logger.info(E.PANDA + E.PANDA +E.PANDA +E.PANDA +
+                " getCountryCitiesZippedFile starting countryId: " + countryId);
+
+        long start = System.currentTimeMillis();
+        List<City> cities = cityRepository.findByCountryId(countryId);
+
+
+        String json = gson.toJson(cities);
+
+        DecimalFormat decimalFormat = new DecimalFormat("#.##");
+        decimalFormat.setGroupingUsed(true);
+        decimalFormat.setGroupingSize(3);
+
+        logger.info(E.RED_DOT + E.RED_DOT + " Before zip: " + decimalFormat.format(json.length()) + " bytes in json");
+
+        File dir = new File("zipDirectory");
+        if (!dir.exists()) {
+            boolean ok = dir.mkdir();
+            logger.info( " Zip directory created: path: " + dir.getAbsolutePath() + " created: " + ok);
+        }
+        File zippedFile = new File(dir, DateTime.now().getMillis() + ".zip");
+        ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zippedFile));
+        ZipEntry e = new ZipEntry("cities");
+        out.putNextEntry(e);
+
+        byte[] data = json.getBytes();
+        out.write(data, 0, data.length);
+        out.closeEntry();
+
+        out.close();
+        long end = System.currentTimeMillis();
+        long ms = (end - start);
+        double elapsed = Double.parseDouble("" + ms) / Double.parseDouble("1000");
+
+        logger.info(E.RED_DOT + E.RED_DOT + " After zip: "
+                + decimalFormat.format(zippedFile.length()) + " bytes in file, elapsed: "
+                + E.RED_APPLE + " " + elapsed + " seconds");
+
+        return zippedFile;
+    }
+
 
     public List<Country> getCountries() {
         return countryRepository.findAll();
