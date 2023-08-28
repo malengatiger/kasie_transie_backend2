@@ -43,9 +43,7 @@ public class MessagingService {
         Query q = new Query().addCriteria(Criteria.where("associationId")
                 .is(associationId)).with(Sort.by(Sort.Direction.DESC, "created"));
 
-        List<AssociationToken> list = mongoTemplate.find(q, AssociationToken.class);
-        //logger.info(E.HAND1 + E.HAND2 + " Association tokens found: " + list.size());
-        return list;
+        return mongoTemplate.find(q, AssociationToken.class);
     }
 
     public AssociationToken addAssociationToken(String associationId, String userId, String token) throws Exception {
@@ -99,7 +97,7 @@ public class MessagingService {
             Message message = buildMessage(Constants.vehicleArrival, topic,
                     G.toJson(vehicleArrival), notification);
             FirebaseMessaging.getInstance().send(message);
-            logger.info(MM + "VehicleArrival message sent via FCM TOPIC: " + vehicleArrival.getVehicleReg());
+           // logger.info(MM + "VehicleArrival message sent via FCM TOPIC: " + vehicleArrival.getVehicleReg());
 
             //get tokens for association (FOR devices running on Web - Kasie Web
             List<AssociationToken> assTokens = getTokens(vehicleArrival.getAssociationId());
@@ -150,8 +148,8 @@ public class MessagingService {
                     .build();
         }
         FirebaseMessaging.getInstance().send(msg);
-        logger.info(E.GLOBE + E.GLOBE + E.GLOBE + E.GLOBE +
-                " " + dataType + " FCM message sent direct to device using token");
+//        logger.info(E.GLOBE + E.GLOBE + E.GLOBE + E.GLOBE +
+//                " " + dataType + " FCM message sent direct to device using token");
     }
 
     public void sendMessage(VehicleDeparture vehicleDeparture) {
@@ -167,7 +165,7 @@ public class MessagingService {
             Message message = buildMessage(Constants.vehicleDeparture, topic,
                     G.toJson(vehicleDeparture), notification);
             FirebaseMessaging.getInstance().send(message);
-            logger.info(MM + "VehicleDeparture message sent via FCM TOPIC: " + vehicleDeparture.getVehicleReg());
+           // logger.info(MM + "VehicleDeparture message sent via FCM TOPIC: " + vehicleDeparture.getVehicleReg());
 
             List<AssociationToken> assTokens = getTokens(vehicleDeparture.getAssociationId());
             for (AssociationToken token : assTokens) {
@@ -195,7 +193,7 @@ public class MessagingService {
             Message message = buildMessage(Constants.locationRequest, topic,
                     G.toJson(locationRequest), notification);
             FirebaseMessaging.getInstance().send(message);
-            logger.info(MM + "locationRequest message sent via FCM TOPIC: " + locationRequest.getVehicleReg());
+           // logger.info(MM + "locationRequest message sent via FCM TOPIC: " + locationRequest.getVehicleReg());
 
             List<AssociationToken> assTokens = getTokens(locationRequest.getAssociationId());
             for (AssociationToken token : assTokens) {
@@ -219,7 +217,7 @@ public class MessagingService {
             Message message = buildMessage(Constants.heartbeat, topic,
                     G.toJson(heartbeat));
             FirebaseMessaging.getInstance().send(message);
-            logger.info(MM + "heartbeat message sent via FCM: " + heartbeat.getVehicleReg());
+           // logger.info(MM + "heartbeat message sent via FCM: " + heartbeat.getVehicleReg());
             List<AssociationToken> assTokens = getTokens(heartbeat.getAssociationId());
             for (AssociationToken token : assTokens) {
                 sendAssociationMessage(heartbeat, Constants.heartbeat, null, token.getToken());
@@ -247,7 +245,7 @@ public class MessagingService {
             Message message = buildMessage(Constants.locationResponse, topic,
                     G.toJson(locationResponse), notification);
             FirebaseMessaging.getInstance().send(message);
-            logger.info(MM + "locationResponse message sent via FCM: " + locationResponse.getVehicleReg());
+           // logger.info(MM + "locationResponse message sent via FCM: " + locationResponse.getVehicleReg());
             List<AssociationToken> assTokens = getTokens(locationResponse.getAssociationId());
             for (AssociationToken token : assTokens) {
                 sendAssociationMessage(locationResponse, Constants.locationResponse, notification, token.getToken());
@@ -275,7 +273,7 @@ public class MessagingService {
             Message message = buildMessage(Constants.userGeofenceEvent, topic,
                     G.toJson(userGeofenceEvent), notification);
             FirebaseMessaging.getInstance().send(message);
-            logger.info(MM + "userGeofenceEvent message sent via FCM: " + userGeofenceEvent.getLandmarkName());
+           // logger.info(MM + "userGeofenceEvent message sent via FCM: " + userGeofenceEvent.getLandmarkName());
             List<AssociationToken> assTokens = getTokens(userGeofenceEvent.getAssociationId());
             for (AssociationToken token : assTokens) {
                 sendAssociationMessage(userGeofenceEvent, Constants.userGeofenceEvent, notification, token.getToken());
@@ -302,7 +300,7 @@ public class MessagingService {
             Message message = buildMessage(Constants.routeUpdateRequest, topic,
                     G.toJson(routeUpdateRequest), notification);
             FirebaseMessaging.getInstance().send(message);
-            logger.info(MM + "routeUpdateRequest message sent via FCM: " + routeUpdateRequest.getRouteName());
+           // logger.info(MM + "routeUpdateRequest message sent via FCM: " + routeUpdateRequest.getRouteName());
 
             List<AssociationToken> assTokens = getTokens(routeUpdateRequest.getAssociationId());
             for (AssociationToken token : assTokens) {
@@ -329,7 +327,7 @@ public class MessagingService {
                 Message message = buildMessage(Constants.vehicleChanges, topic,
                         G.toJson(vehicle));
                 FirebaseMessaging.getInstance().send(message);
-                logger.info(MM + "vehicleChanges message sent via FCM: " + vehicle.getVehicleReg());
+               // logger.info(MM + "vehicleChanges message sent via FCM: " + vehicle.getVehicleReg());
                 List<AssociationToken> assTokens = getTokens(associationId);
                 for (AssociationToken token : assTokens) {
                     sendAssociationMessage(vehicle, Constants.vehicleChanges, null, token.getToken());
@@ -361,7 +359,7 @@ public class MessagingService {
                     data, notification);
 
             FirebaseMessaging.getInstance().send(message);
-            logger.info(MM + "vehicleMediaRequest message sent via FCM: " + request.getVehicleReg());
+           // logger.info(MM + "vehicleMediaRequest message sent via FCM: " + request.getVehicleReg());
             List<AssociationToken> assTokens = getTokens(request.getAssociationId());
             for (AssociationToken token : assTokens) {
                 sendAssociationMessage(request, Constants.vehicleMediaRequest, notification, token.getToken());
@@ -389,7 +387,7 @@ public class MessagingService {
             Message message = buildMessage(Constants.dispatchRecord, topic,
                     G.toJson(dispatchRecord));
             FirebaseMessaging.getInstance().send(message);
-            logger.info(MM + "dispatchRecord message sent via FCM TOPIC: " + dispatchRecord.getVehicleReg());
+           // logger.info(MM + "dispatchRecord message sent via FCM TOPIC: " + dispatchRecord.getVehicleReg());
 
             List<AssociationToken> assTokens = getTokens(dispatchRecord.getAssociationId());
             for (AssociationToken token : assTokens) {
@@ -438,7 +436,7 @@ public class MessagingService {
                     G.toJson(commuterRequest), notification);
 
             FirebaseMessaging.getInstance().send(message);
-            logger.info(MM + "commuterRequest message sent via FCM TOPIC: " + commuterRequest.getRouteName());
+           // logger.info(MM + "commuterRequest message sent via FCM TOPIC: " + commuterRequest.getRouteName());
 
             List<AssociationToken> assTokens = getTokens(commuterRequest.getAssociationId());
             for (AssociationToken token : assTokens) {
@@ -465,7 +463,7 @@ public class MessagingService {
             Message message = buildMessage(Constants.passengerCount, topic,
                     G.toJson(passengerCount));
             FirebaseMessaging.getInstance().send(message);
-            logger.info(MM + "passengerCount message sent via FCM TOPIC: " + passengerCount.getVehicleReg());
+           // logger.info(MM + "passengerCount message sent via FCM TOPIC: " + passengerCount.getVehicleReg());
 
             List<AssociationToken> assTokens = getTokens(passengerCount.getAssociationId());
             for (AssociationToken token : assTokens) {

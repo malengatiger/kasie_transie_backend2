@@ -7,11 +7,14 @@ import com.mongodb.client.model.Indexes;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.TimeSeries;
+import org.springframework.data.mongodb.core.timeseries.Granularity;
 
 import java.util.logging.Logger;
 
 @Data
 @Document(collection = "VehicleHeartbeat")
+
 public class VehicleHeartbeat {
     private String _partitionKey;
     @Id

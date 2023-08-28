@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -46,6 +45,7 @@ public class ListController {
     private final MediaService mediaService;
     final AmbassadorService ambassadorService;
     final CommuterService commuterService;
+    final TimeSeriesService timeSeriesService;
 
     @GetMapping("/getRoutePointAggregate")
     public ResponseEntity<Object> getRoutePointAggregate() {
@@ -158,6 +158,33 @@ public class ListController {
             return ResponseEntity.badRequest().body(
                     new CustomResponse(400,
                             "getAssociationVehicles failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+    }
+
+    @GetMapping("/getAssociationHeartbeatTimeSeries")
+    public ResponseEntity<Object> getAssociationHeartbeatTimeSeries(@RequestParam String associationId, @RequestParam String startDate) {
+        try {
+            List<AssociationHeartbeatAggregationResult> ass = timeSeriesService
+                    .aggregateAssociationHeartbeatData(associationId, startDate);
+            return ResponseEntity.ok(ass);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomResponse(400,
+                            "getAssociationHeartbeatTimeSeries failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+    }
+    @GetMapping("/getVehicleHeartbeatTimeSeries")
+    public ResponseEntity<Object> getVehicleHeartbeatTimeSeries(@RequestParam String vehicleId, @RequestParam String startDate) {
+        try {
+            List<VehicleHeartbeatAggregationResult> ass = timeSeriesService
+                    .aggregateVehicleHeartbeatData(vehicleId, startDate);
+            return ResponseEntity.ok(ass);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomResponse(400,
+                            "getVehicleHeartbeatTimeSeries failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
         }
     }

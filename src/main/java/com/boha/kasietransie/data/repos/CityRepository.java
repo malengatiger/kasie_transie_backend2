@@ -1,7 +1,6 @@
 package com.boha.kasietransie.data.repos;
 
 import com.boha.kasietransie.data.dto.City;
-import com.boha.kasietransie.data.dto.RoutePoint;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.geo.Distance;

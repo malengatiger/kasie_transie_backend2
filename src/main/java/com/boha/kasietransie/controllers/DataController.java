@@ -50,6 +50,7 @@ public class DataController {
     final AmbassadorService ambassadorService;
     final CommuterService commuterService;
     final DispatchAsyncHelperService dispatchAsyncHelperService;
+    final TimeSeriesService timeSeriesService;
 
     @PostMapping("/createUser")
     public ResponseEntity<Object> createUser(@RequestBody User user) {
@@ -948,8 +949,8 @@ public class DataController {
 
     @GetMapping("/addAssociationToken")
     public ResponseEntity<Object> addAssociationToken(@RequestParam String associationId,
-                                               @RequestParam String userId,
-                                                     @RequestParam String token) {
+                                                      @RequestParam String userId,
+                                                      @RequestParam String token) {
         try {
             AssociationToken m = messagingService.addAssociationToken(
                     associationId, userId, token);
@@ -979,6 +980,7 @@ public class DataController {
                             new DateTime().toDateTimeISO().toString()));
         }
     }
+
     @GetMapping("/generateVehicleRouteHeartbeats")
     public ResponseEntity<Object> generateVehicleRouteHeartbeats(String vehicleId,
                                                                  String routeId,
@@ -1052,6 +1054,40 @@ public class DataController {
 
     }
 
+    @GetMapping("/buildTimeSeries")
+    public ResponseEntity<Object> buildTimeSeries(
+            @RequestParam String collectionName,
+            @RequestParam String metaField,
+            @RequestParam String timeField) {
+        try {
+            CustomResponse m = timeSeriesService.buildTimeSeries(
+                    collectionName, timeField, metaField);
+            return ResponseEntity.ok(m);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomResponse(400,
+                            "buildTimeSeries failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+
+    }
+
+    @GetMapping("/addHeartbeatTimeSeries")
+    public ResponseEntity<Object> addHeartbeatTimeSeries(@RequestParam String associationId,
+                                                         @RequestParam String vehicleId,
+                                                         @RequestParam String vehicleReg) {
+        try {
+            CustomResponse m = timeSeriesService.addHeartbeatTimeSeries(associationId, vehicleId, vehicleReg);
+            return ResponseEntity.ok(m);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomResponse(400,
+                            "addHeartbeatTimeSeries failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+
+    }
+
     @GetMapping("/generateRoutePassengerCounts")
     public ResponseEntity<Object> generateRoutePassengerCounts(
             @RequestParam String routeId,
@@ -1077,7 +1113,7 @@ public class DataController {
         try {
             dispatchAsyncHelperService
                     .generateRouteDispatchRecordsInParallel(request);
-            CustomResponse c = new CustomResponse(200,"Dispatch record generation",
+            CustomResponse c = new CustomResponse(200, "Dispatch record generation",
                     DateTime.now().toDateTimeISO().toString());
             return ResponseEntity.ok(c);
         } catch (Exception e) {

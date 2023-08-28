@@ -134,8 +134,7 @@ public class MonitorAuthenticationFilter extends OncePerRequestFilter {
         }
         //allow localhost
         if (url.contains("localhost") || url.contains("192.168.86.242")) {
-            LOGGER.info(mm + " contextPath: " + httpServletRequest.getContextPath()
-                    + E.AMP + " requestURI: " + httpServletRequest.getRequestURI() + "\n\n");
+
             LOGGER.info(mm + " allowing call from " + url + " " + E.HEART_GREEN + E.HEART_GREEN + E.HEART_GREEN + E.HEART_GREEN);
 
             doFilter(httpServletRequest, httpServletResponse, filterChain);
@@ -162,10 +161,10 @@ public class MonitorAuthenticationFilter extends OncePerRequestFilter {
 //                String value = httpServletRequest.getHeader(key);
 //                logger.info(E.RED_DOT + " header name: " + key + E.LEAF+" value: " + value);
 //            }
-            LOGGER.info(".... handing off to filterChain ... query: " + httpServletRequest.getQueryString() );
+            //LOGGER.info(".... handing off to filterChain ... query: " + httpServletRequest.getQueryString() );
             filterChain.doFilter(httpServletRequest, httpServletResponse);
             //print(httpServletRequest);
-            LOGGER.info(".... back from filterChain ...");
+            //LOGGER.info(".... back from filterChain ...");
 
         } catch (IOException | ServletException e) {
             e.printStackTrace();
@@ -179,7 +178,8 @@ public class MonitorAuthenticationFilter extends OncePerRequestFilter {
         } else {
             LOGGER.info("\uD83D\uDD37\uD83D\uDD37\uD83D\uDD37\uD83D\uDD37"
                     + httpServletRequest.getRequestURI() + " \uD83D\uDD37 Status Code: "
-                    + httpServletResponse.getStatus() + "  \uD83D\uDD37 \uD83D\uDD37 \uD83D\uDD37 ");
+                    + httpServletResponse.getStatus() + "  \uD83D\uDD37 \uD83D\uDD37 \uD83D\uDD37 "
+                    + httpServletResponse.getOutputStream().toString());
         }
     }
 

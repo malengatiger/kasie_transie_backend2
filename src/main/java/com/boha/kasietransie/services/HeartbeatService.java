@@ -43,6 +43,8 @@ public class HeartbeatService {
     final VehicleRepository vehicleRepository;
     final UserRepository userRepository;
     final AmbassadorService ambassadorService;
+    final VehicleHeartbeatTimeSeriesRepository vehicleHeartbeatTimeSeriesRepository;
+    final TimeSeriesService timeSeriesService;
     private static final Logger logger = LoggerFactory.getLogger(HeartbeatService.class);
 
     @Async
@@ -171,6 +173,18 @@ public class HeartbeatService {
 
     public VehicleHeartbeat addVehicleHeartbeat(VehicleHeartbeat heartbeat) {
         VehicleHeartbeat hb = heartbeatRepository.insert(heartbeat);
+        HeartbeatMeta meta = new HeartbeatMeta();
+        meta.setVehicleId(heartbeat.getVehicleId());
+        meta.setVehicleReg(heartbeat.getVehicleReg());
+        meta.setLatitude(heartbeat.getPosition().getCoordinates().get(1));
+        meta.setLongitude(heartbeat.getPosition().getCoordinates().get(0));
+
+        meta.setOwnerId(heartbeat.getOwnerId());
+        meta.setAssociationId(heartbeat.getAssociationId());
+
+        timeSeriesService.addHeartbeatTimeSeries(heartbeat.getAssociationId(),
+                heartbeat.getVehicleId(), heartbeat.getVehicleReg());
+
         messagingService.sendMessage(hb);
         return hb;
     }

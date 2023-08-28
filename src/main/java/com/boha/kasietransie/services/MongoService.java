@@ -512,6 +512,7 @@ public class MongoService {
             Commuter.createIndex(db);
             CommuterRequest.createIndex(db);
             RouteAssignment.createIndex(db);
+            VehicleHeartbeatTimeSeries.createIndex(db);
 
             logger.info(XX + " MongoService has completed setup of indexes " + E.BELL + E.BELL);
 
