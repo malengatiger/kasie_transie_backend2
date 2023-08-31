@@ -7,6 +7,7 @@ import com.boha.kasietransie.data.dto.VehicleHeartbeatTimeSeries;
 import com.boha.kasietransie.data.repos.VehicleHeartbeatTimeSeriesRepository;
 import com.boha.kasietransie.util.CustomResponse;
 import com.boha.kasietransie.util.E;
+import com.boha.kasietransie.util.Zipper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mongodb.client.MongoDatabase;
@@ -26,7 +27,9 @@ import org.springframework.data.mongodb.core.aggregation.Fields;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -126,8 +129,8 @@ public class TimeSeriesService {
         return new ArrayList<>();
     }
 
-    public List<AssociationHeartbeatAggregationResult> aggregateAssociationHeartbeatData(
-            String associationId, String startDate) {
+    public File aggregateAssociationHeartbeatData(
+            String associationId, String startDate) throws Exception {
         try {
             BsonDateTime bst = new BsonDateTime(DateTime.parse(startDate).getMillis());
             Aggregation aggregation = Aggregation.newAggregation(
@@ -154,20 +157,22 @@ public class TimeSeriesService {
                     aggregation, "VehicleHeartbeatTimeSeries", AssociationHeartbeatAggregationResult.class
             );
 
+            List<AssociationHeartbeatAggregationResult> sortedResults = new ArrayList<>();
             List<AssociationHeartbeatAggregationResult> associationHeartbeatAggregationResults = results.getMappedResults();
-            logger.info("AssociationHeartbeatAggregationResult: " + associationHeartbeatAggregationResults.size());
-            if (!associationHeartbeatAggregationResults.isEmpty()) {
-                for (AssociationHeartbeatAggregationResult result : associationHeartbeatAggregationResults) {
-                    logger.info(E.RED_DOT + " AssociationHeartbeatAggregationResult: " + G.toJson(result));
 
-                }
+            logger.info(E.RED_DOT + " Total aggregates, to be sorted: " + associationHeartbeatAggregationResults.size());
+            try {
+                sortedResults.addAll(associationHeartbeatAggregationResults);
+                Collections.sort(sortedResults);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            logger.info(E.RED_DOT + " Total aggregates: " + associationHeartbeatAggregationResults.size());
-            return associationHeartbeatAggregationResults;
+            String json = G.toJson(sortedResults);
+            return Zipper.getZippedFile(json);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return new ArrayList<>();
+        throw new Exception("Aggregation failed");
     }
 
 }

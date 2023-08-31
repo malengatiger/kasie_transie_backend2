@@ -8,6 +8,7 @@ import com.boha.kasietransie.data.repos.CountryRepository;
 import com.boha.kasietransie.data.repos.StateRepository;
 import com.boha.kasietransie.data.repos.UserRepository;
 import com.boha.kasietransie.util.E;
+import com.boha.kasietransie.util.Zipper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mongodb.client.MongoClient;
@@ -112,39 +113,9 @@ public class CityService {
         long start = System.currentTimeMillis();
         List<City> cities = cityRepository.findByCountryId(countryId);
 
-
         String json = gson.toJson(cities);
 
-        DecimalFormat decimalFormat = new DecimalFormat("#.##");
-        decimalFormat.setGroupingUsed(true);
-        decimalFormat.setGroupingSize(3);
-
-        logger.info(E.RED_DOT + E.RED_DOT + " Before zip: " + decimalFormat.format(json.length()) + " bytes in json");
-
-        File dir = new File("zipDirectory");
-        if (!dir.exists()) {
-            boolean ok = dir.mkdir();
-            logger.info( " Zip directory created: path: " + dir.getAbsolutePath() + " created: " + ok);
-        }
-        File zippedFile = new File(dir, DateTime.now().getMillis() + ".zip");
-        ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zippedFile));
-        ZipEntry e = new ZipEntry("cities");
-        out.putNextEntry(e);
-
-        byte[] data = json.getBytes();
-        out.write(data, 0, data.length);
-        out.closeEntry();
-
-        out.close();
-        long end = System.currentTimeMillis();
-        long ms = (end - start);
-        double elapsed = Double.parseDouble("" + ms) / Double.parseDouble("1000");
-
-        logger.info(E.RED_DOT + E.RED_DOT + " After zip: "
-                + decimalFormat.format(zippedFile.length()) + " bytes in file, elapsed: "
-                + E.RED_APPLE + " " + elapsed + " seconds");
-
-        return zippedFile;
+        return Zipper.getZippedFile(json);
     }
 
 

@@ -26,10 +26,31 @@ public class VehicleHeartbeatAggregationId {
 
     @Override
     public String toString() {
-        return "HeartbeatAggregationId{" +
-                "year=" + year +
-                ", month=" + month +
-                ", day=" + day +
-                '}';
+        return parseDate(year,month,day,hour);
+    }
+
+
+
+    String parseDate(int year,
+                     int month,
+                     int day,
+                     int hour) {
+        //2023-08-30T18:04:20.278+02:00
+        StringBuilder sb = new StringBuilder();
+        sb.append(year).append("-");
+        if (month < 10) {
+            sb.append("0");
+        }
+        sb.append(month).append("-");
+        if (day < 10) {
+            sb.append("0");
+        }
+        sb.append(day).append("-");
+        if (hour < 10) {
+            sb.append("0");
+        }
+        sb.append(hour);
+
+        return sb.toString();
     }
 }

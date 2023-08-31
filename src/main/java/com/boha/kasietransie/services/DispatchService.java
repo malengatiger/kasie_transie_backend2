@@ -4,6 +4,9 @@ import com.boha.kasietransie.data.*;
 import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.data.repos.*;
 import com.boha.kasietransie.util.E;
+import com.boha.kasietransie.util.Zipper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,11 +21,17 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.DecimalFormat;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 import static org.springframework.data.mongodb.core.query.Query.query;
@@ -491,6 +500,58 @@ public class DispatchService {
         logger.info(sb);
         return bag;
     }
+    public AssociationCounts getAssociationCounts(String associationId, String startDate) {
+//        logger.info(E.GLOBE + " getAssociationBag starting ...");
+        AssociationCounts bag = new AssociationCounts();
+        bag.setCreated(DateTime.now().toDateTimeISO().toString());
+        Query query = new Query(Criteria.where("associationId").is(associationId));
+        query.addCriteria(Criteria.where("created").gte(startDate));
+        long hbCount = mongoTemplate.count(query, VehicleHeartbeat.class);
+        long depCount = mongoTemplate.count(query, VehicleDeparture.class);
+        long arrCount = mongoTemplate.count(query, VehicleArrival.class);
+        long disCount = mongoTemplate.count(query, DispatchRecord.class);
+
+        Query query2 = new Query(Criteria.where("associationId").is(associationId));
+        query2.addCriteria(Criteria.where("dateRequested").gte(startDate));
+        long comCount = mongoTemplate.count(query2, CommuterRequest.class);
+
+        Query query3 = new Query(Criteria.where("associationId").is(associationId));
+        query3.addCriteria(Criteria.where("created").gte(startDate));
+        List<AmbassadorPassengerCount> ambCnts = mongoTemplate.find(query3, AmbassadorPassengerCount.class);
+        int passCount = 0;
+        for (AmbassadorPassengerCount ambCnt : ambCnts) {
+            passCount += ambCnt.getPassengersIn();
+        }
+
+        bag.setDepartures(depCount);
+        bag.setHeartbeats(hbCount);
+        bag.setDispatchRecords(disCount);
+        bag.setPassengerCounts(passCount);
+        bag.setArrivals(arrCount);
+        bag.setCommuterRequests(comCount);
+
+        String sb = E.LEAF + E.LEAF + E.LEAF + " Association Bag contains:\n" + E.CHECK +
+                "Arrivals: " + arrCount + "\n" + E.CHECK +
+                "Departures: " + depCount + "\n" + E.CHECK +
+                "Commuter Requests: " + comCount+ "\n" + E.CHECK +
+                "Dispatch Records: " + disCount + "\n" + E.CHECK +
+                "Passenger Counts: " + passCount + "\n" + E.CHECK +
+                "Heartbeats: " + hbCount + "\n";
+
+        logger.info(sb);
+        return bag;
+    }
+    public File getAssociationBagZippedFile(String associationId, String startDate) throws Exception {
+        logger.info(E.PANDA + E.PANDA +E.PANDA +E.PANDA +
+                " getAssociationBagZippedFile, associationId: " + associationId);
+
+        AssociationBag bag = getAssociationBag(associationId, startDate);
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        String json = gson.toJson(bag);
+
+        return Zipper.getZippedFile(json);
+    }
+
 
     public String fixOwnerToPassengerCounts(String userId, String ownerId, String ownerName) {
         List<AmbassadorPassengerCount> counts = ambassadorPassengerCountRepository.findByUserId(userId);

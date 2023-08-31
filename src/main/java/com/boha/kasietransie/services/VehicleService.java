@@ -3,10 +3,7 @@ package com.boha.kasietransie.services;
 import com.boha.kasietransie.data.RouteAssignmentList;
 import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.data.repos.*;
-import com.boha.kasietransie.util.Constants;
-import com.boha.kasietransie.util.E;
-import com.boha.kasietransie.util.FileToVehicles;
-import com.boha.kasietransie.util.VehicleUploadResponse;
+import com.boha.kasietransie.util.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.zxing.BarcodeFormat;
@@ -802,40 +799,9 @@ public class VehicleService {
         logger.info(E.PANDA + E.PANDA +E.PANDA +E.PANDA +
                 " getVehiclesZippedFile, associationId: " + associationId);
 
-        long start = System.currentTimeMillis();
         List<Vehicle> cars = vehicleRepository.findByAssociationId(associationId);
         String json = gson.toJson(cars);
-
-        DecimalFormat decimalFormat = new DecimalFormat("#.##");
-        decimalFormat.setGroupingUsed(true);
-        decimalFormat.setGroupingSize(3);
-
-        logger.info(E.RED_DOT + E.RED_DOT + " Before zip: " + decimalFormat.format(json.length()) + " bytes in json");
-
-        File dir = new File("zipDirectory");
-        if (!dir.exists()) {
-            boolean ok = dir.mkdir();
-            logger.info( " Zip directory created: path: " + dir.getAbsolutePath() + " created: " + ok);
-        }
-        File zippedFile = new File(dir, DateTime.now().getMillis() + ".zip");
-        ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zippedFile));
-        ZipEntry e = new ZipEntry("cars");
-        out.putNextEntry(e);
-
-        byte[] data = json.getBytes();
-        out.write(data, 0, data.length);
-        out.closeEntry();
-
-        out.close();
-        long end = System.currentTimeMillis();
-        long ms = (end - start);
-        double elapsed = Double.parseDouble("" + ms) / Double.parseDouble("1000");
-
-        logger.info(E.RED_DOT + E.RED_DOT + " After zip: "
-                + decimalFormat.format(zippedFile.length()) + " bytes in file, elapsed: "
-                + E.RED_APPLE + " " + elapsed + " seconds");
-
-        return zippedFile;
+        return Zipper.getZippedFile(json);
     }
 
 }

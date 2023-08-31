@@ -163,16 +163,21 @@ public class ListController {
     }
 
     @GetMapping("/getAssociationHeartbeatTimeSeries")
-    public ResponseEntity<Object> getAssociationHeartbeatTimeSeries(@RequestParam String associationId, @RequestParam String startDate) {
+    public byte[] getAssociationHeartbeatTimeSeries(@RequestParam String associationId, @RequestParam String startDate) throws Exception {
         try {
-            List<AssociationHeartbeatAggregationResult> ass = timeSeriesService
+            File zippedFile = timeSeriesService
                     .aggregateAssociationHeartbeatData(associationId, startDate);
-            return ResponseEntity.ok(ass);
+            byte[] bytes = java.nio.file.Files.readAllBytes(zippedFile.toPath());
+            try {
+                boolean deleted = zippedFile.delete();
+                logger.info(E.PANDA + E.PANDA + " zipped AssociationHeartbeatTimeSeries file deleted : " + deleted);
+            } catch (Exception e) {
+                //ignore
+            }
+            return bytes;
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                    new CustomResponse(400,
-                            "getAssociationHeartbeatTimeSeries failed: " + e.getMessage(),
-                            new DateTime().toDateTimeISO().toString()));
+            e.printStackTrace();
+            throw e;
         }
     }
     @GetMapping("/getVehicleHeartbeatTimeSeries")
@@ -230,6 +235,34 @@ public class ListController {
                     new CustomResponse(400,
                             "getAssociationBag failed: " + e.getMessage(),
                             new DateTime().toDateTimeISO().toString()));
+        }
+    }
+    @GetMapping("/getAssociationCounts")
+    public ResponseEntity<Object> getAssociationCounts(@RequestParam String associationId,
+                                                    @RequestParam String startDate) {
+        try {
+            AssociationCounts ass = dispatchService
+                    .getAssociationCounts(associationId, startDate);
+            return ResponseEntity.ok(ass);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomResponse(400,
+                            "getAssociationCounts failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+    }
+    @GetMapping("/getAssociationBagZipped")
+    public byte[] getAssociationBagZipped(@RequestParam String associationId,
+                                                    @RequestParam String startDate) throws Exception {
+        try {
+            File ass = dispatchService
+                    .getAssociationBagZippedFile(associationId, startDate);
+            byte[] bytes = java.nio.file.Files.readAllBytes(ass.toPath());
+            boolean deleted = ass.delete();
+            logger.info(E.PANDA + E.PANDA + " getAssociationBagZipped file deleted : " + deleted);
+            return bytes;
+        } catch (Exception e) {
+            throw new Exception("getAssociationBagZipped failed: " + e.getMessage());
         }
     }
 
