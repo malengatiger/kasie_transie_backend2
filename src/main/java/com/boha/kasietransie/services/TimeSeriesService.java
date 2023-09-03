@@ -131,6 +131,10 @@ public class TimeSeriesService {
 
     public File aggregateAssociationHeartbeatData(
             String associationId, String startDate) throws Exception {
+        logger.info(E.BLUE_DOT + E.BLUE_DOT + E.BLUE_DOT +
+                " aggregateAssociationHeartbeatData starting, date: "
+                + startDate);
+
         try {
             BsonDateTime bst = new BsonDateTime(DateTime.parse(startDate).getMillis());
             Aggregation aggregation = Aggregation.newAggregation(
@@ -164,6 +168,9 @@ public class TimeSeriesService {
             try {
                 sortedResults.addAll(associationHeartbeatAggregationResults);
                 Collections.sort(sortedResults);
+                logger.info(E.LEAF +E.LEAF +E.LEAF +E.LEAF +E.LEAF +E.LEAF +
+                        " Total aggregates, sorted, to be zipped: " + sortedResults.size());
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
