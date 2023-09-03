@@ -607,7 +607,7 @@ public class DataController {
             @RequestParam String associationId,
             @RequestPart MultipartFile document) throws IOException {
 
-        List<User> users = new ArrayList<>();
+        List<User> users;
         String doc = document.getOriginalFilename();
         if (doc == null) {
             return ResponseEntity.badRequest().body(
@@ -629,7 +629,6 @@ public class DataController {
                                     "Failed to create users; no users in file or file is not .json or .csv ",
                                     new DateTime().toDateTimeISO().toString()));
                 }
-
                 return ResponseEntity.ok(users);
             } catch (Exception e) {
                 return ResponseEntity.badRequest().body(
@@ -674,7 +673,7 @@ public class DataController {
             @RequestParam String associationId,
             @RequestPart MultipartFile document) throws IOException {
 
-        List<VehicleUploadResponse> vehicles;
+        List<Vehicle> vehicles;
         String doc = document.getOriginalFilename();
         if (doc == null) {
             return ResponseEntity.badRequest().body(

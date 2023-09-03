@@ -181,32 +181,50 @@ public class UserService {
     public List<User> importUsersFromJSON(File file, String associationId) throws Exception {
         List<Association> orgs = associationRepository.findByAssociationId(associationId);
         List<User> resultUsers = new ArrayList<>();
+        List<User> badUsers = new ArrayList<>();
+
         if (!orgs.isEmpty()) {
             List<User> users = FileToUsers.getUsersFromJSONFile(file);
             for (User user : users) {
                 user.setAssociationId(associationId);
                 user.setAssociationName(orgs.get(0).getAssociationName());
-                User u = createUser(user);
-                resultUsers.add(u);
+                try {
+                    User u = createUser(user);
+                    resultUsers.add(u);
+                } catch (Exception e) {
+                    logger.severe(e.getMessage() + " " + user.getName()
+                            + " " + user.getUserType());
+                    badUsers.add(user);
+                }
             }
 
         }
+        logger.info("Users who failed creation: " + badUsers.size());
         logger.info("Users imported from file: " + resultUsers.size());
+        resultUsers = userRepository.findByAssociationId(associationId);
         return resultUsers;
     }
 
     public List<User> importUsersFromCSV(File file, String associationId) throws Exception {
         List<Association> orgs = associationRepository.findByAssociationId(associationId);
         List<User> resultUsers = new ArrayList<>();
+        List<User> badUsers = new ArrayList<>();
         if (!orgs.isEmpty()) {
             List<User> users = FileToUsers.getUsersFromCSVFile(file);
             for (User user : users) {
                 user.setAssociationId(associationId);
                 user.setAssociationName(orgs.get(0).getAssociationName());
-                User u = createUser(user);
-                resultUsers.add(u);
+                try {
+                    User u = createUser(user);
+                    resultUsers.add(u);
+                } catch (Exception e) {
+                    logger.severe(e.getMessage() + " " + user.getName()
+                    + " " + user.getUserType());
+                    badUsers.add(user);
+                }
             }
         }
+        logger.info("Users who failed creation: " + badUsers.size());
         logger.info("Users imported from file: " + resultUsers.size());
         return resultUsers;
     }

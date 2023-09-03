@@ -24,22 +24,26 @@ public class FileToVehicles {
     private static final Gson G = new GsonBuilder().setPrettyPrinting().create();
     private static final Logger LOGGER = LoggerFactory.getLogger(FileToVehicles.class);
 
-    public static List<Vehicle> getVehiclesFromJSONFile(File file) throws IOException {
-        List<Vehicle> users = new ArrayList<>();
+    public static List<Vehicle> getVehiclesFromJSONFile(File file, String associationId) throws IOException {
+        List<Vehicle> vehicles = new ArrayList<>();
 
         try {
             Path filePath = Path.of(file.getPath());
             String json = Files.readString(filePath);
             Type listType = new TypeToken<ArrayList<Vehicle>>() {
             }.getType();
-            users = G.fromJson(json, listType);
+            vehicles = G.fromJson(json, listType);
+            for (Vehicle vehicle : vehicles) {
+                vehicle.setAssociationId(associationId);
+            }
+
             LOGGER.info("\uD83C\uDF4E\uD83C\uDF4E\uD83C\uDF4E " +
-                    "Vehicle objects created: " + users.size());
+                    "Vehicle objects created: " + vehicles.size());
 
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return users;
+        return vehicles;
     }
 
     public static List<Vehicle> getVehiclesFromCSVFile(File file) throws IOException {

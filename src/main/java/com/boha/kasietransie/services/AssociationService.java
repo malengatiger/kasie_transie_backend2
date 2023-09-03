@@ -241,7 +241,7 @@ final MongoTemplate mongoTemplate;
         File userFile = resource.getFile();
         File carFile = resource1.getFile();
         List<User> users = userService.importUsersFromCSV(userFile, ass.getAssociationId());
-        List<VehicleUploadResponse> cars = vehicleService.importVehiclesFromCSV(carFile, ass.getAssociationId());
+        List<Vehicle> cars = vehicleService.importVehiclesFromCSV(carFile, ass.getAssociationId());
 
         logger.info(XX + " Fake association on the books! " + E.LEAF +
                 " users: " + users.size() +

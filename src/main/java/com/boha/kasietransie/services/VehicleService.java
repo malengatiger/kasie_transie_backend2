@@ -26,21 +26,17 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
-//
+
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.logging.Logger;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 import static org.springframework.data.mongodb.core.query.Query.query;
@@ -74,9 +70,6 @@ public class VehicleService {
     private static final String MM = "\uD83D\uDC26\uD83D\uDC26\uD83D\uDC26\uD83D\uDC26\uD83D\uDC26\uD83D\uDC26\uD83D\uDC26";
 
 
-
-
-
     Random random = new Random(System.currentTimeMillis());
 
     public List<RouteAssignment> addRouteAssignments(RouteAssignmentList list) {
@@ -90,12 +83,15 @@ public class VehicleService {
         }
         return mList;
     }
+
     public List<RouteAssignment> getVehicleRouteAssignments(String vehicleId) {
         return routeAssignmentRepository.findByVehicleId(vehicleId);
     }
+
     public List<RouteAssignment> getRouteAssignments(String routeId) {
         return routeAssignmentRepository.findByRouteId(routeId);
     }
+
     public List<Vehicle> getCars(List<Vehicle> list, int numberOfCars) {
         List<Vehicle> map = new ArrayList<>();
         for (Vehicle vehicle : list) {
@@ -188,7 +184,7 @@ public class VehicleService {
 
     public List<VehicleHeartbeat> generateRouteHeartbeats(String routeId, int numberOfCars,
                                                           int intervalInSeconds) {
-        logger.info(E.BLUE_DOT + " generateRouteHeartbeats starting for route " + routeId + " cars: " + numberOfCars+ E.FERN);
+        logger.info(E.BLUE_DOT + " generateRouteHeartbeats starting for route " + routeId + " cars: " + numberOfCars + E.FERN);
 
         Route route;
         List<Route> routes = routeRepository.findByRouteId(routeId);
@@ -504,27 +500,31 @@ public class VehicleService {
         return count;
     }
 
-    public List<VehicleUploadResponse> importVehiclesFromJSON(File file, String associationId) throws Exception {
+    public List<Vehicle> importVehiclesFromJSON(File file, String associationId) throws Exception {
         logger.info(E.BLUE_DOT + E.BLUE_DOT + " importVehiclesFromJSON :" + associationId);
 
         List<Association> asses = associationRepository.findByAssociationId(associationId);
-        List<VehicleUploadResponse> vehicles = new ArrayList<>();
+        List<VehicleUploadResponse> vehicleUploadResponses = new ArrayList<>();
 
         if (!asses.isEmpty()) {
-            List<Vehicle> vehiclesFromJSONFile = FileToVehicles.getVehiclesFromJSONFile(file);
+            List<Vehicle> vehiclesFromJSONFile = FileToVehicles.getVehiclesFromJSONFile(file, associationId);
             logger.info(E.BLUE_DOT + " getVehiclesFromJSONFile: "
                     + vehiclesFromJSONFile.size() + " will start processVehiclesFromFile");
-            vehicles = processVehiclesFromFile(associationId, asses, vehiclesFromJSONFile);
+            vehicleUploadResponses = processVehiclesFromFile(asses.get(0), vehiclesFromJSONFile);
             logger.info(E.BLUE_DOT + " processVehiclesFromFile: "
-                    + vehicles.size() + " will start processVehiclesFromFile");
+                    + vehicleUploadResponses.size() + " will start processVehiclesFromFile");
 
         }
-        return vehicles;
+        List<Vehicle> list = vehicleRepository.findByAssociationId(associationId);
+        logger.info(E.BLUE_DOT + " association vehicles after loading new cars: "
+                + list.size() + " ");
+
+        return list;
     }
 
-    private List<VehicleUploadResponse> processVehiclesFromFile(String associationId,
-                                                                List<Association> asses,
-                                                                List<Vehicle> vehiclesFromJSONFile) throws Exception {
+    private List<VehicleUploadResponse> processVehiclesFromFile(
+            Association association,
+            List<Vehicle> vehiclesFromJSONFile) {
 
         logger.info("processing vehiclesFromJSONFile :" + vehiclesFromJSONFile.size());
         List<VehicleUploadResponse> responses = new ArrayList<>();
@@ -552,17 +552,18 @@ public class VehicleService {
                         vehicles.add(vehicle);
                     }
                 }
-                logger.info(E.BLUE_DOT + " owner cars :" + vehicles.size());
 
+                logger.info(E.BLUE_DOT + " owner cars :" + vehicles.size());
                 try {
-                    List<VehicleUploadResponse> uploadResponses = createUserAndVehicles(asses.get(0), resultVehicles,
-                            lastName, firstName, vehicles);
+                    String cellphone = vehicles.get(0).getCellphone();
+                    List<VehicleUploadResponse> uploadResponses = createUserAndVehicles(association, resultVehicles,
+                            cellphone, lastName, firstName.toString(), vehicles);
                     responses.addAll(uploadResponses);
                     logger.info(E.LEAF + E.LEAF + E.LEAF
                             + " uploadResponses has been created for owner: " + name + " responses: " +
                             " " + uploadResponses.size());
                 } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    logger.severe(e.getMessage());
                 }
 
             }
@@ -575,92 +576,145 @@ public class VehicleService {
     }
 
     private List<VehicleUploadResponse> createUserAndVehicles(Association ass,
-                                                              List<Vehicle> resultVehicles, String lastName,
-                                                              StringBuilder firstName, List<Vehicle> vehicles) throws Exception {
-        User user = new User();
+                                                              List<Vehicle> resultVehicles, String cellphone, String lastName,
+                                                              String firstName, List<Vehicle> vehicles) throws Exception {
         List<VehicleUploadResponse> responses = new ArrayList<>();
+        User existingUser = null;
         try {
-            user.setPassword(UUID.randomUUID().toString());
-            user.setFirstName(firstName.toString());
-            user.setLastName(lastName);
-            user.setCellphone(vehicles.get(0).getCellphone());
-            user.setUserType(Constants.OWNER);
-            user.setAssociationId(ass.getAssociationId());
-            user.setAssociationName(ass.getAssociationName());
-            user.setCountryId(ass.getCountryId());
-            user.setCountryName(ass.getCountryName());
-            User mUser = null;
-            try {
-                mUser = userService.createUser(user);
-            } catch (Exception e) {
-                VehicleUploadResponse rep = new VehicleUploadResponse(null,
-                        user.getName(), false, user.getCellphone());
-                responses.add(rep);
+            List<User> users = userRepository.findByCellphone(cellphone);
+            if (!users.isEmpty()) {
+                existingUser = users.get(0);
             }
-            for (Vehicle vehicle : vehicles) {
-                vehicle.setAssociationId(ass.getAssociationId());
-                vehicle.setAssociationName(ass.getAssociationName());
-                vehicle.setCreated(DateTime.now().toDateTimeISO().toString());
-                vehicle.setCountryId(ass.getCountryId());
-                vehicle.setVehicleId(UUID.randomUUID().toString());
-                vehicle.setOwnerName(user.getName());
-                assert mUser != null;
-                vehicle.setOwnerId(mUser.getUserId());
-                vehicle.setActive(0);
+            if (existingUser == null) {
+                existingUser = buildUser(cellphone, lastName, firstName, ass, responses);
+            }
 
-                int result = createVehicleQRCode(vehicle);
-                if (result == 0) {
-                    try {
-                        vehicleRepository.insert(vehicle);
-                        resultVehicles.add(vehicle);
+            for (Vehicle vehicle : vehicles) {
+                //todo - check if car already exists ...
+                Vehicle existCar = null;
+                List<Vehicle> cars = vehicleRepository.findByVehicleReg(vehicle.getVehicleReg());
+                if (!cars.isEmpty()) {
+                    existCar = cars.get(0);
+                }
+                if (existCar == null) {
+                    setCar(ass, existingUser, vehicle);
+                    int result = createVehicleQRCode(vehicle);
+                    if (result == 0) {
+                        insertCar(resultVehicles, responses, existingUser, vehicle, result);
+                    } else {
+                        logger.severe(E.NOT_OK + " Unable to create QRCode for "
+                                + vehicle.getVehicleReg());
                         VehicleUploadResponse rep = new VehicleUploadResponse(vehicle.getVehicleReg(),
-                                vehicle.getOwnerName(), true, user.getCellphone());
+                                vehicle.getOwnerName(), false, existingUser.getCellphone());
                         responses.add(rep);
-                        logger.info(E.OK + E.OK + " ... we cool with QRCode for "
-                                + gson.toJson(vehicle) + " result: " + result);
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                        break;
                     }
-                } else {
-                    logger.severe(E.NOT_OK + " Unable to create QRCode for "
-                            + vehicle.getVehicleReg());
+
                     VehicleUploadResponse rep = new VehicleUploadResponse(vehicle.getVehicleReg(),
-                            vehicle.getOwnerName(), false, user.getCellphone());
+                            vehicle.getOwnerName(), true, existingUser.getCellphone());
                     responses.add(rep);
 
+                } else {
+                    VehicleUploadResponse rep = new VehicleUploadResponse(existCar.getVehicleReg(),
+                            existingUser.getName(), false, existingUser.getCellphone());
+                    responses.add(rep);
                 }
             }
             logger.info("Vehicles for user imported from file will be added: " + vehicles.size() +
-                    " owner: " + user.getName());
+                    " owner: " + existingUser.getName());
         } catch (Exception e) {
+            assert existingUser != null;
             VehicleUploadResponse rep = new VehicleUploadResponse(null,
-                    user.getName(), false, user.getCellphone());
+                    existingUser.getName(), false, existingUser.getCellphone());
             responses.add(rep);
         }
         return responses;
     }
 
-    public List<VehicleUploadResponse> importVehiclesFromCSV(File file, String associationId) throws Exception {
+    private void insertCar(List<Vehicle> resultVehicles, List<VehicleUploadResponse> responses, User existingUser, Vehicle vehicle, int result) {
+        vehicleRepository.insert(vehicle);
+        resultVehicles.add(vehicle);
+        VehicleUploadResponse rep = new VehicleUploadResponse(vehicle.getVehicleReg(),
+                vehicle.getOwnerName(), true, existingUser.getCellphone());
+        responses.add(rep);
+        logger.info(E.OK + E.OK + " ... we cool with QRCode for "
+                + gson.toJson(vehicle) + " result: " + result);
+    }
+
+    private static void setCar(Association ass, User existingUser, Vehicle vehicle) {
+        vehicle.setAssociationId(ass.getAssociationId());
+        vehicle.setAssociationName(ass.getAssociationName());
+        vehicle.setCreated(DateTime.now().toDateTimeISO().toString());
+        vehicle.setCountryId(ass.getCountryId());
+        vehicle.setVehicleId(UUID.randomUUID().toString());
+        vehicle.setOwnerName(existingUser.getName());
+        vehicle.setOwnerId(existingUser.getUserId());
+        vehicle.setActive(0);
+    }
+
+    private User buildUser(String cellphone, String lastName,
+                           String firstName, Association ass, List<VehicleUploadResponse> responses) {
+
+        User user = new User();
+        user.setPassword(UUID.randomUUID().toString());
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setCellphone(cellphone);
+        user.setUserType(Constants.OWNER);
+        user.setAssociationId(user.getAssociationId());
+        user.setAssociationName(ass.getAssociationName());
+        user.setCountryId(ass.getCountryId());
+        user.setCountryName(ass.getCountryName());
+        try {
+            user = userService.createUser(user);
+        } catch (Exception e) {
+            VehicleUploadResponse rep = new VehicleUploadResponse(null,
+                    user.getName(), false, user.getCellphone());
+            responses.add(rep);
+        }
+        if (user == null) {
+            user = new User();
+            user.setFirstName("Association");
+            user.setLastName(ass.getAssociationName());
+            user.setUserId("Unavailable");
+            user.setCellphone(ass.getAdminCellphone());
+        }
+
+        return user;
+    }
+
+    public List<Vehicle> importVehiclesFromCSV(File file, String associationId) throws Exception {
         List<Association> asses = associationRepository.findByAssociationId(associationId);
         logger.info("importVehiclesFromCSV: associationId: " + associationId + " asses: " + asses.size());
-        List<VehicleUploadResponse> uploadResponses = new ArrayList<>();
+        Association association;
+        if (!asses.isEmpty()) {
+            association = asses.get(0);
+        } else {
+            throw new Exception("Association not found");
+        }
         try {
             List<Vehicle> vehiclesFromCSVFile = FileToVehicles.getVehiclesFromCSVFile(file);
             logger.info("importVehiclesFromCSV: vehiclesFromCSVFile: " + vehiclesFromCSVFile.size());
 
             if (!asses.isEmpty()) {
-                uploadResponses = processVehiclesFromFile(associationId, asses, vehiclesFromCSVFile);
+                processVehiclesFromFile(association, vehiclesFromCSVFile);
 
             }
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
-        return uploadResponses;
+        List<Vehicle> list = vehicleRepository.findByAssociationId(associationId);
+        logger.info(E.BLUE_DOT + " all cars after new file uploaded: "
+                + list.size() + " ");
+
+        return list;
     }
 
     public List<Vehicle> generateFakeVehicles(String associationId, int number) throws Exception {
         List<Vehicle> list = new ArrayList<>();
+        List<Vehicle> badList = new ArrayList<>();
+
         List<Association> asses = associationRepository.findByAssociationId(associationId);
         if (asses.isEmpty()) {
             logger.info(E.RED_DOT + " Association not found!");
@@ -669,8 +723,13 @@ public class VehicleService {
         for (int i = 0; i < number; i++) {
             Vehicle mVehicle = getBaseVehicle(associationId,
                     asses.get(0).getAssociationName());
-            createVehicleQRCode(mVehicle);
-            list.add(mVehicle);
+            try {
+                createVehicleQRCode(mVehicle);
+                list.add(mVehicle);
+            } catch (Exception e) {
+                logger.severe(e.getMessage());
+                badList.add(mVehicle);
+            }
         }
         List<Vehicle> mList = vehicleRepository.insert(list);
         logger.info(E.FROG + E.FROG + E.FROG + " vehicles added to database: " + mList.size());
@@ -693,7 +752,7 @@ public class VehicleService {
             return new ArrayList<>();
         }
         //
-        List<Vehicle> vehiclesFromJSONFile = FileToVehicles.getVehiclesFromJSONFile(file);
+        List<Vehicle> vehiclesFromJSONFile = FileToVehicles.getVehiclesFromJSONFile(file, associationId);
         //fill up objects
         for (Vehicle v : vehiclesFromJSONFile) {
             v.setAssociationId(asses.get(0).getAssociationId());
@@ -796,7 +855,7 @@ public class VehicleService {
     }
 
     public File getVehiclesZippedFile(String associationId) throws Exception {
-        logger.info(E.PANDA + E.PANDA +E.PANDA +E.PANDA +
+        logger.info(E.PANDA + E.PANDA + E.PANDA + E.PANDA +
                 " getVehiclesZippedFile, associationId: " + associationId);
 
         List<Vehicle> cars = vehicleRepository.findByAssociationId(associationId);
