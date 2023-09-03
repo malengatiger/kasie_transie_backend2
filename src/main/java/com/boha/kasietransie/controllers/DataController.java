@@ -5,7 +5,6 @@ import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.services.*;
 import com.boha.kasietransie.util.CustomResponse;
 import com.boha.kasietransie.util.E;
-import com.boha.kasietransie.util.VehicleUploadResponse;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -736,6 +735,81 @@ public class DataController {
                         new DateTime().toDateTimeISO().toString()));
     }
 
+    @PostMapping("upLoadExampleFiles")
+    public ResponseEntity<Object> upLoadExampleFiles(
+            @RequestPart MultipartFile userCSV,
+            @RequestPart MultipartFile vehicleCSV,
+            @RequestPart MultipartFile userJSON,
+            @RequestPart MultipartFile vehicleJSON) throws IOException {
+
+        String userCSVFileName = userCSV.getOriginalFilename();
+        String vehicleCSVFileName = vehicleCSV.getOriginalFilename();
+
+        String userJSONFileName = userJSON.getOriginalFilename();
+        String vehicleJSONFileName = vehicleJSON.getOriginalFilename();
+
+        if (userCSVFileName == null) {
+            return ResponseEntity.badRequest().body(
+                    new CustomResponse(400,
+                            "Problem with user csv file ",
+                            new DateTime().toDateTimeISO().toString()));
+        }
+        if (userJSONFileName == null) {
+            return ResponseEntity.badRequest().body(
+                    new CustomResponse(400,
+                            "Problem with user json file ",
+                            new DateTime().toDateTimeISO().toString()));
+        }
+        if (vehicleCSVFileName == null) {
+            return ResponseEntity.badRequest().body(
+                    new CustomResponse(400,
+                            "Problem with vehicle csv file ",
+                            new DateTime().toDateTimeISO().toString()));
+        }
+        if (vehicleJSONFileName == null) {
+            return ResponseEntity.badRequest().body(
+                    new CustomResponse(400,
+                            "Problem with vehicle json file ",
+                            new DateTime().toDateTimeISO().toString()));
+        }
+        //
+        logger.info(E.CHECK+" userCSVFileName: " + userCSVFileName);
+        logger.info(E.CHECK+" userJSONFileName: " + userJSONFileName);
+
+        logger.info(E.CHECK+" vehicleCSVFileName: " + vehicleCSVFileName);
+        logger.info(E.CHECK+" vehicleJSONFileName: " + vehicleJSONFileName);
+
+
+        File userCSVFile = new File(userCSVFileName);
+        Files.write(userCSV.getBytes(), userCSVFile);
+
+        File vehicleCSVFile = new File(vehicleCSVFileName);
+        Files.write(vehicleCSV.getBytes(), vehicleCSVFile);
+
+        File vehicleJSONFile = new File(vehicleJSONFileName);
+        Files.write(vehicleJSON.getBytes(), vehicleJSONFile);
+
+        File userJSONFile = new File(userJSONFileName);
+        Files.write(userJSON.getBytes(), userJSONFile);
+
+        List<File> files = new ArrayList<>();
+        files.add(userJSONFile);
+        files.add(userCSVFile);
+        files.add(vehicleJSONFile);
+        files.add(vehicleCSVFile);
+
+        logger.info("\uD83C\uDF3C\uD83C\uDF3C we have files to work with: " + files.size());
+        try {
+            List<ExampleFile> cr = associationService.upLoadExampleFiles(files);
+            return ResponseEntity.ok(cr);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomResponse(400,
+                            "Failed to upload example files: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+
+    }
 
     @GetMapping("/addCountriesStatesCitiesToDB")
     public ResponseEntity<Object> addCountriesStatesCitiesToDB() {

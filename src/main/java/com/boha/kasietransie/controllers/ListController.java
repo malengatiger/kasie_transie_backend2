@@ -281,6 +281,20 @@ public class ListController {
         }
     }
 
+    @GetMapping("/getExampleFiles")
+    public ResponseEntity<Object> getExampleFiles() {
+        try {
+            List<ExampleFile> ass = associationService
+                    .getExampleFiles();
+            return ResponseEntity.ok(ass);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new CustomResponse(400,
+                            "getExampleFiles failed: " + e.getMessage(),
+                            new DateTime().toDateTimeISO().toString()));
+        }
+    }
+
     @GetMapping("/getOwnerVehicleHeartbeats")
     public ResponseEntity<Object> getOwnerVehicleHeartbeats(@RequestParam String associationId,
                                                             @RequestParam int cutoffHours) {

@@ -1,25 +1,24 @@
 package com.boha.kasietransie.services;
 
 import com.boha.kasietransie.data.AppErrors;
+import com.boha.kasietransie.data.ExampleFile;
 import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.data.repos.*;
 import com.boha.kasietransie.util.Constants;
+import com.boha.kasietransie.util.CustomResponse;
 import com.boha.kasietransie.util.E;
-import com.boha.kasietransie.util.VehicleUploadResponse;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.joda.time.DateTime;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -37,33 +36,36 @@ public class AssociationService {
     private final AppErrorRepository appErrorRepository;
     private final AssociationRepository associationRepository;
     private final UserService userService;
-
+    final CloudStorageUploaderService cloudStorageUploaderService;
     private final VehicleService vehicleService;
     private final CountryRepository countryRepository;
     private final CityRepository cityRepository;
     private final SettingsModelRepository settingsModelRepository;
     private final ResourceLoader resourceLoader;
-final AssociationTokenRepository associationTokenRepository;
-final MongoTemplate mongoTemplate;
+    final AssociationTokenRepository associationTokenRepository;
+    final ExampleFileRepository exampleFileRepository;
+    final MongoTemplate mongoTemplate;
 
     public AssociationService(AppErrorRepository appErrorRepository,
                               AssociationRepository associationRepository,
                               UserService userService,
-                              VehicleService vehicleService,
+                              CloudStorageUploaderService cloudStorageUploaderService, VehicleService vehicleService,
                               CountryRepository countryRepository,
                               CityRepository cityRepository,
                               SettingsModelRepository settingsModelRepository,
                               ResourceLoader resourceLoader,
-                              MongoTemplate mongoTemplate, AssociationTokenRepository associationTokenRepository, MongoTemplate mongoTemplate1) {
+                              MongoTemplate mongoTemplate, AssociationTokenRepository associationTokenRepository, ExampleFileRepository exampleFileRepository, MongoTemplate mongoTemplate1) {
         this.appErrorRepository = appErrorRepository;
         this.associationRepository = associationRepository;
         this.userService = userService;
+        this.cloudStorageUploaderService = cloudStorageUploaderService;
         this.vehicleService = vehicleService;
         this.countryRepository = countryRepository;
         this.cityRepository = cityRepository;
         this.settingsModelRepository = settingsModelRepository;
         this.resourceLoader = resourceLoader;
         this.associationTokenRepository = associationTokenRepository;
+        this.exampleFileRepository = exampleFileRepository;
         this.mongoTemplate = mongoTemplate1;
         logger.info(MM + " AssociationService constructed ");
 
@@ -164,6 +166,7 @@ final MongoTemplate mongoTemplate;
     public AppError addAppError(AppError error) {
         return appErrorRepository.insert(error);
     }
+
     public List<AppError> addAppErrors(AppErrors errors) {
         return appErrorRepository.insert(errors.getAppErrorList());
     }
@@ -251,6 +254,46 @@ final MongoTemplate mongoTemplate;
 
         return bag;
     }
+
+    public List<ExampleFile> getExampleFiles() {
+        return exampleFileRepository.findAll();
+    }
+    public List<ExampleFile> upLoadExampleFiles(List<File> files) throws Exception {
+
+        List<ExampleFile> exampleFiles = new ArrayList<>();
+        exampleFileRepository.deleteAll();
+
+        for (File file : files) {
+            String url = cloudStorageUploaderService.uploadFile(file.getName(), file);
+            boolean delete = Files.deleteIfExists(file.toPath());
+            logger.info(E.COFFEE + E.COFFEE + "File uploaded : "+file.getName()+"url: " + url);
+
+            String type = null;
+            if (file.getName().contains(".csv")) {
+                type = "csv";
+            }
+            if (file.getName().contains(".json")) {
+                type = "json";
+            }
+            if (type == null) {
+                throw new Exception("Invalid file type. should be .csv or .json");
+            }
+            ExampleFile exampleFile = new ExampleFile(type,file.getName(),url);
+            ExampleFile res = exampleFileRepository.insert(exampleFile);
+            exampleFiles.add(res);
+            logger.info(E.LEAF + E.LEAF + E.LEAF +
+                    " ExampleFile added to database to be sent; url: " + url + " for file: " + file.getName()
+                    + E.RED_APPLE + " - temp file deleted: " + delete);
+        }
+
+        logger.info(E.LEAF + E.LEAF + E.LEAF +
+                " ExampleFiles added to database; url: " + exampleFiles.size()
+                + " for file: " + files.size()
+                + E.RED_APPLE);
+
+        return exampleFiles;
+    }
+
 
     static final String XX = E.RED_APPLE + E.RED_APPLE;
 }
