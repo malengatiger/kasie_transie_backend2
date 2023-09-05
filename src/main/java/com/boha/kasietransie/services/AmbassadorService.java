@@ -256,8 +256,8 @@ public class AmbassadorService {
                                                                 RouteLandmark mark) {
         int userIndex = random.nextInt(users.size() - 1);
         User user = users.get(userIndex);
-        int initialPassengers = random.nextInt(16);
-        if (initialPassengers == 0) initialPassengers = 16;
+        int initialPassengers = random.nextInt(10);
+        if (initialPassengers == 0) initialPassengers = 4;
         //
         AmbassadorPassengerCount apc = new AmbassadorPassengerCount();
         apc.setCreated(minutesAgo.toString());
@@ -280,10 +280,10 @@ public class AmbassadorService {
             apc.setPassengersIn(initialPassengers);
             apc.setCurrentPassengers(initialPassengers);
         } else {
-            int passengersIn = random.nextInt(16);
-            if (passengersIn < 2) passengersIn = 6;
+            int passengersIn = random.nextInt(6);
+            if (passengersIn < 2) passengersIn = 2;
             apc.setPassengersIn(passengersIn);
-            int passengersOut = random.nextInt(12);
+            int passengersOut = random.nextInt(6);
             apc.setPassengersOut(passengersOut);
             if (previousAPC != null) {
                 int count = getCurrentPassengers(apc.getPassengersIn(), apc.getPassengersOut(),

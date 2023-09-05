@@ -536,6 +536,7 @@ public class VehicleService {
             for (Vehicle vehicle : vehiclesFromJSONFile) {
                 nameMap.put(vehicle.getOwnerName(), vehicle.getOwnerName());
             }
+            // all owners
             List<String> names = nameMap.values().stream().toList();
             logger.info(E.BLUE_DOT + " owner names :" + names.size());
 
@@ -548,7 +549,7 @@ public class VehicleService {
                 }
                 List<Vehicle> vehicles = new ArrayList<>();
                 for (Vehicle vehicle : vehiclesFromJSONFile) {
-                    if (vehicle.getOwnerName().equalsIgnoreCase(name)) {
+                    if (vehicle.getOwnerName().toLowerCase().contains(name.toLowerCase())) {
                         vehicles.add(vehicle);
                     }
                 }
@@ -571,13 +572,16 @@ public class VehicleService {
             e.printStackTrace();
             throw e;
         }
+        for (VehicleUploadResponse response : responses) {
+            logger.info(E.LEAF+E.LEAF+ " vehicle file response: " + gson.toJson(response));
+        }
 
         return responses;
     }
 
     private List<VehicleUploadResponse> createUserAndVehicles(Association ass,
                                                               List<Vehicle> resultVehicles, String cellphone, String lastName,
-                                                              String firstName, List<Vehicle> vehicles) throws Exception {
+                                                              String firstName, List<Vehicle> vehicles) {
         List<VehicleUploadResponse> responses = new ArrayList<>();
         User existingUser = null;
         try {
@@ -695,11 +699,8 @@ public class VehicleService {
         try {
             List<Vehicle> vehiclesFromCSVFile = FileToVehicles.getVehiclesFromCSVFile(file);
             logger.info("importVehiclesFromCSV: vehiclesFromCSVFile: " + vehiclesFromCSVFile.size());
+            processVehiclesFromFile(association, vehiclesFromCSVFile);
 
-            if (!asses.isEmpty()) {
-                processVehiclesFromFile(association, vehiclesFromCSVFile);
-
-            }
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);

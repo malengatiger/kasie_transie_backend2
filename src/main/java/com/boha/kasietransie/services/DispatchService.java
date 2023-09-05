@@ -622,7 +622,7 @@ public class DispatchService {
                     if (nextLandmark != null) {
                        // logger.info(E.BLUE_DISC + E.BLUE_DISC + E.BLUE_DISC + " next landmark: " + nextLandmark.getLandmarkName());
                         try {
-                            Thread.sleep(random.nextInt(5) * 1000L);
+                            Thread.sleep(random.nextInt(3) * 1000L);
                         } catch (InterruptedException e) {
                             //ignore
                         }

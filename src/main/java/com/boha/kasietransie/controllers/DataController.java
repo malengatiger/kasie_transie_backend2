@@ -677,7 +677,7 @@ public class DataController {
         if (doc == null) {
             return ResponseEntity.badRequest().body(
                     new CustomResponse(400,
-                            "Problem with user file ",
+                            "Problem with car file ",
                             new DateTime().toDateTimeISO().toString()));
         }
         File file = new File(doc);
