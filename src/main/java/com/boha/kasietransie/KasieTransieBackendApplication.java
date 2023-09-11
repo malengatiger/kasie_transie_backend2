@@ -34,82 +34,82 @@ import java.util.logging.Logger;
 @EnableMongoRepositories(basePackages = "com.boha.kasietransie.data.repos")
 @EnableAsync
 @Configuration
-public class KasieTransieBackendApplication implements ApplicationListener<ApplicationReadyEvent> {
-	private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
-	private static final Logger logger = Logger.getLogger(KasieTransieBackendApplication.class.getSimpleName());
-	private static final String MM = "\uD83D\uDD35\uD83D\uDC26\uD83D\uDD35\uD83D\uDC26\uD83D\uDD35\uD83D\uDC26 ";
-	private final MongoService mongoService;
-	private final FirebaseService firebaseService;
+class KasieTransieBackendApplication implements ApplicationListener<ApplicationReadyEvent> {
+    static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    static final Logger logger = Logger.getLogger(KasieTransieBackendApplication.class.getSimpleName());
+    static final String MM = "\uD83D\uDD35\uD83D\uDC26\uD83D\uDD35\uD83D\uDC26\uD83D\uDD35\uD83D\uDC26 ";
+    final MongoService mongoService;
+    final FirebaseService firebaseService;
 
-	@Value("${doIndex}")
-	private int doIndex;
+    @Value("${doIndex}")
+    int doIndex;
 
-	public KasieTransieBackendApplication(MongoService mongoService, FirebaseService firebaseService) {
-		this.mongoService = mongoService;
-		this.firebaseService = firebaseService;
-	}
+    public KasieTransieBackendApplication(MongoService mongoService, FirebaseService firebaseService) {
+        this.mongoService = mongoService;
+        this.firebaseService = firebaseService;
+    }
 
 
-	public static void main(String[] args) {
+    public static void main(String[] args) {
 
-		logger.info(MM + " ................ " +
-				"KasieTransieBackendApplication starting ...");
-		SpringApplication.run(KasieTransieBackendApplication.class, args);
-		logger.info(MM + E.RED_APPLE + E.RED_APPLE + E.RED_APPLE
-				+ " KasieTransieBackendApplication started OK! " + E.YELLOW + E.YELLOW);
+        logger.info(MM + " ................ " +
+                "KasieTransieBackendApplication starting ...");
+        SpringApplication.run(KasieTransieBackendApplication.class, args);
+        logger.info(MM + E.RED_APPLE + E.RED_APPLE + E.RED_APPLE
+                + " KasieTransieBackendApplication started OK! " + E.YELLOW + E.YELLOW);
 
-	}
+    }
 
-	@Override
-	public void onApplicationEvent(ApplicationReadyEvent event) throws RuntimeException {
+    @Override
+    public void onApplicationEvent(ApplicationReadyEvent event) throws RuntimeException {
 
-		ApplicationContext applicationContext = event.getApplicationContext();
-		RequestMappingHandlerMapping requestMappingHandlerMapping = applicationContext
-				.getBean("requestMappingHandlerMapping", RequestMappingHandlerMapping.class);
-		Map<RequestMappingInfo, HandlerMethod> map = requestMappingHandlerMapping
-				.getHandlerMethods();
+        ApplicationContext applicationContext = event.getApplicationContext();
+        RequestMappingHandlerMapping requestMappingHandlerMapping = applicationContext
+                .getBean("requestMappingHandlerMapping", RequestMappingHandlerMapping.class);
+        Map<RequestMappingInfo, HandlerMethod> map = requestMappingHandlerMapping
+                .getHandlerMethods();
 
-		logger.info(E.PEAR + E.PEAR + E.PEAR + E.PEAR +
-				" Total Endpoints: " + map.size() + "\n");
+        logger.info(E.PEAR + E.PEAR + E.PEAR + E.PEAR +
+                " Total Endpoints: " + map.size() + "\n");
 
-		try {
-			firebaseService.initializeFirebase();
-			if (doIndex > 0) {
-				mongoService.initializeIndexes();
-			}
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+        try {
+            firebaseService.initializeFirebase();
+            if (doIndex > 0) {
+                mongoService.initializeIndexes();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
-		try (final DatagramSocket datagramSocket = new DatagramSocket()) {
-			datagramSocket.connect(InetAddress.getByName("8.8.8.8"), 12345);
-			var addr = datagramSocket.getLocalAddress().getHostAddress();
-			logger.info(E.PEAR + E.PEAR + E.PEAR + E.PEAR
-					+ " datagramSocket: Current IP address : " + addr);
+        try (final DatagramSocket datagramSocket = new DatagramSocket()) {
+            datagramSocket.connect(InetAddress.getByName("8.8.8.8"), 12345);
+            var addr = datagramSocket.getLocalAddress().getHostAddress();
+            logger.info(E.PEAR + E.PEAR + E.PEAR + E.PEAR
+                    + " datagramSocket: Current IP address : " + addr);
 
-		} catch (SocketException | UnknownHostException e) {
-			//
-		}
+        } catch (SocketException | UnknownHostException e) {
+            //
+        }
 
-		InetAddress ip;
-		try {
-			ip = InetAddress.getLocalHost();
-			logger.info(E.PEAR + E.PEAR + E.PEAR + E.PEAR
-					+ " Current IP address : " + ip.getHostAddress());
+        InetAddress ip;
+        try {
+            ip = InetAddress.getLocalHost();
+            logger.info(E.PEAR + E.PEAR + E.PEAR + E.PEAR
+                    + " Current IP address : " + ip.getHostAddress());
 
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		}
-	}
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+    }
 
-	@Bean
-	public WebMvcConfigurer corsConfigurer() {
-		return new WebMvcConfigurer() {
-			@Override
-			public void addCorsMappings(CorsRegistry registry) {
-				logger.info(E.BLUE_DOT+" WebMvcConfigurer setting CORS mapping ...");
-				registry.addMapping("/**").allowedOrigins("*");
-			}
-		};
-	}
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                logger.info(E.BLUE_DOT + " WebMvcConfigurer setting CORS mapping ...");
+                registry.addMapping("/**").allowedOrigins("*");
+            }
+        };
+    }
 }

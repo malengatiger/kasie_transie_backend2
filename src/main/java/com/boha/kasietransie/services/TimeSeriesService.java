@@ -1,7 +1,7 @@
 package com.boha.kasietransie.services;
 
-import com.boha.kasietransie.data.AssociationHeartbeatAggregationResult;
-import com.boha.kasietransie.data.VehicleHeartbeatAggregationResult;
+import com.boha.kasietransie.helpermodels.AssociationHeartbeatAggregationResult;
+import com.boha.kasietransie.helpermodels.VehicleHeartbeatAggregationResult;
 import com.boha.kasietransie.data.dto.HeartbeatMeta;
 import com.boha.kasietransie.data.dto.VehicleHeartbeatTimeSeries;
 import com.boha.kasietransie.data.repos.VehicleHeartbeatTimeSeriesRepository;

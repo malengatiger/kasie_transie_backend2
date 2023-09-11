@@ -1,4 +1,4 @@
-package com.boha.kasietransie.data;
+package com.boha.kasietransie.data.dto;
 
 import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Document;

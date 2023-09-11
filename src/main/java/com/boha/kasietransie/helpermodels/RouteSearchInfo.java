@@ -1,4 +1,4 @@
-package com.boha.kasietransie.data;
+package com.boha.kasietransie.helpermodels;
 
 import com.boha.kasietransie.data.dto.Route;
 import com.boha.kasietransie.data.dto.RouteLandmark;

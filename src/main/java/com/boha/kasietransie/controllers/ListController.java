@@ -1,7 +1,7 @@
 package com.boha.kasietransie.controllers;
 
-import com.boha.kasietransie.data.*;
 import com.boha.kasietransie.data.dto.*;
+import com.boha.kasietransie.helpermodels.*;
 import com.boha.kasietransie.services.*;
 import com.boha.kasietransie.util.CustomResponse;
 import com.boha.kasietransie.util.E;
@@ -13,6 +13,10 @@ import lombok.RequiredArgsConstructor;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -23,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -46,6 +51,7 @@ public class ListController {
     final AmbassadorService ambassadorService;
     final CommuterService commuterService;
     final TimeSeriesService timeSeriesService;
+    final DataFileService dataFileService;
 
     @GetMapping("/getRoutePointAggregate")
     public ResponseEntity<Object> getRoutePointAggregate() {
@@ -265,7 +271,23 @@ public class ListController {
             throw new Exception("getAssociationBagZipped failed: " + e.getMessage());
         }
     }
+    @GetMapping("/file")
+    public ResponseEntity<FileSystemResource> getZippedFile() throws Exception {
+        File zipFile = dataFileService.createZippedFile();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=data.zip")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(new FileSystemResource(zipFile));
+    }
 
+    @GetMapping("/byte-array")
+    public ResponseEntity<ByteArrayResource> getZippedByteArray() throws IOException {
+        byte[] byteArray = dataFileService.createZippedByteArray();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=data.zip")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(new ByteArrayResource(byteArray));
+    }
     @GetMapping("/getVehicleHeartbeats")
     public ResponseEntity<Object> getVehicleHeartbeats(@RequestParam String associationId,
                                                        @RequestParam int cutoffHours) {

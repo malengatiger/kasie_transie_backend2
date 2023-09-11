@@ -1,6 +1,6 @@
 package com.boha.kasietransie.services;
 
-import com.boha.kasietransie.data.TranslationBag;
+import com.boha.kasietransie.data.dto.TranslationBag;
 import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.data.repos.CityRepository;
 import com.boha.kasietransie.data.repos.CountryRepository;

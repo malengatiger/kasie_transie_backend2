@@ -1,8 +1,8 @@
 package com.boha.kasietransie.services;
 
-import com.boha.kasietransie.data.*;
 import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.data.repos.*;
+import com.boha.kasietransie.helpermodels.*;
 import com.boha.kasietransie.util.E;
 import com.boha.kasietransie.util.Zipper;
 import com.google.gson.Gson;
@@ -22,16 +22,11 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.text.DecimalFormat;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 import static org.springframework.data.mongodb.core.query.Query.query;

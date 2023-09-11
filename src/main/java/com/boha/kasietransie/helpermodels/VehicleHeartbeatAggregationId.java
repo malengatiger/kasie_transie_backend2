@@ -1,4 +1,4 @@
-package com.boha.kasietransie.data;
+package com.boha.kasietransie.helpermodels;
 
 import lombok.Data;
 

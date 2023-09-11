@@ -2,8 +2,8 @@ package com.boha.kasietransie.services;
 
 // Imports the Google Cloud Translation library.
 
-import com.boha.kasietransie.data.TranslationBag;
-import com.boha.kasietransie.data.TranslationInput;
+import com.boha.kasietransie.data.dto.TranslationBag;
+import com.boha.kasietransie.helpermodels.TranslationInput;
 import com.boha.kasietransie.data.repos.TranslationBagRepository;
 import com.boha.kasietransie.util.E;
 import com.google.cloud.translate.v3.*;

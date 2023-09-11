@@ -1,8 +1,8 @@
 package com.boha.kasietransie.services;
 
-import com.boha.kasietransie.data.CalculatedDistanceList;
-import com.boha.kasietransie.data.RouteBag;
-import com.boha.kasietransie.data.RouteBagList;
+import com.boha.kasietransie.helpermodels.CalculatedDistanceList;
+import com.boha.kasietransie.helpermodels.RouteBag;
+import com.boha.kasietransie.helpermodels.RouteBagList;
 import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.data.repos.*;
 import com.boha.kasietransie.util.E;
@@ -17,7 +17,6 @@ import com.google.zxing.qrcode.QRCodeWriter;
 import com.mongodb.WriteConcern;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.result.DeleteResult;
-import org.joda.time.DateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -38,11 +37,8 @@ import org.springframework.stereotype.Service;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -50,8 +46,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.*;
 

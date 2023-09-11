@@ -15,7 +15,7 @@ requestsPerSecond: 6
 server:
     connection-timeout: 90s
     max-http-header-size: 80KB
-    port: 8080
+    port: 8083
     tomcat:
         max-http-get-size: 4MB
         max-http-post-size: 4MB

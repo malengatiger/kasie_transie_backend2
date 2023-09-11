@@ -1,6 +1,6 @@
 package com.boha.kasietransie.services;
 
-import com.boha.kasietransie.data.GenerationRequest;
+import com.boha.kasietransie.helpermodels.GenerationRequest;
 import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.data.repos.RoutePointRepository;
 import com.boha.kasietransie.data.repos.RouteRepository;
@@ -10,8 +10,6 @@ import com.boha.kasietransie.util.E;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;

@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -45,8 +46,8 @@ public class MonitorAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(@NotNull HttpServletRequest httpServletRequest,
-                                    @NotNull HttpServletResponse httpServletResponse,
-                                    @NotNull FilterChain filterChain) throws ServletException, IOException {
+                                    @NotNull @NonNull HttpServletResponse httpServletResponse,
+                                    @NotNull @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         String url = httpServletRequest.getRequestURL().toString();
         if (profile.equalsIgnoreCase("test")) {
@@ -54,7 +55,8 @@ public class MonitorAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
         //todp - remove
-        if (exclude(httpServletRequest, httpServletResponse, filterChain, url)) return;
+
+        if (exclude(httpServletRequest, httpServletResponse, filterChain)) return;
 
         String m = httpServletRequest.getHeader("Authorization");
         if (m == null) {
@@ -89,7 +91,9 @@ public class MonitorAuthenticationFilter extends OncePerRequestFilter {
 
     }
 
-    private boolean exclude(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, FilterChain filterChain, String url) throws IOException, ServletException {
+    private boolean exclude(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, FilterChain filterChain) throws IOException, ServletException {
+        String url = httpServletRequest.getRequestURL().toString();
+
         if (url.contains("kasietransie")) {   //this is my local machine
             LOGGER.info(E.ANGRY + E.ANGRY + "kasietransie this request is not subject to authentication: "
                     + E.HAND2 + url);
@@ -134,9 +138,7 @@ public class MonitorAuthenticationFilter extends OncePerRequestFilter {
         }
         //allow localhost
         if (url.contains("localhost") || url.contains("192.168.86.242")) {
-
             LOGGER.info(mm + " allowing call from " + url + " " + E.HEART_GREEN + E.HEART_GREEN + E.HEART_GREEN + E.HEART_GREEN);
-
             doFilter(httpServletRequest, httpServletResponse, filterChain);
             return true;
         }

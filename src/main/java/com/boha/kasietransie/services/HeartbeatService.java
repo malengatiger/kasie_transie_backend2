@@ -1,6 +1,6 @@
 package com.boha.kasietransie.services;
 
-import com.boha.kasietransie.data.GenerationRequest;
+import com.boha.kasietransie.helpermodels.GenerationRequest;
 import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.data.repos.*;
 import com.boha.kasietransie.util.E;

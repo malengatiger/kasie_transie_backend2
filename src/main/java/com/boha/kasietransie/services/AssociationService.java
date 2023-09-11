@@ -1,11 +1,10 @@
 package com.boha.kasietransie.services;
 
-import com.boha.kasietransie.data.AppErrors;
-import com.boha.kasietransie.data.ExampleFile;
+import com.boha.kasietransie.helpermodels.AppErrors;
+import com.boha.kasietransie.data.dto.ExampleFile;
 import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.data.repos.*;
 import com.boha.kasietransie.util.Constants;
-import com.boha.kasietransie.util.CustomResponse;
 import com.boha.kasietransie.util.E;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.gson.Gson;

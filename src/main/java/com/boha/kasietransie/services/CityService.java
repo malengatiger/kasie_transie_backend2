@@ -1,7 +1,5 @@
 package com.boha.kasietransie.services;
 
-import com.boha.kasietransie.data.RouteBag;
-import com.boha.kasietransie.data.RouteBagList;
 import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.data.repos.CityRepository;
 import com.boha.kasietransie.data.repos.CountryRepository;
@@ -18,7 +16,6 @@ import com.mongodb.client.model.geojson.Point;
 import com.mongodb.client.model.geojson.Position;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -31,8 +28,6 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -40,8 +35,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import static com.mongodb.client.model.Filters.near;
 

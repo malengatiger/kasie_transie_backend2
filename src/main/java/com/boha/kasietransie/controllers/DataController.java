@@ -1,7 +1,7 @@
 package com.boha.kasietransie.controllers;
 
-import com.boha.kasietransie.data.*;
 import com.boha.kasietransie.data.dto.*;
+import com.boha.kasietransie.helpermodels.*;
 import com.boha.kasietransie.services.*;
 import com.boha.kasietransie.util.CustomResponse;
 import com.boha.kasietransie.util.E;

@@ -1,6 +1,6 @@
 package com.boha.kasietransie.services;
 
-import com.boha.kasietransie.data.RouteAssignmentList;
+import com.boha.kasietransie.helpermodels.RouteAssignmentList;
 import com.boha.kasietransie.data.dto.*;
 import com.boha.kasietransie.data.repos.*;
 import com.boha.kasietransie.util.*;
@@ -370,6 +370,9 @@ public class VehicleService {
     }
 
     public Vehicle updateVehicle(Vehicle vehicle) {
+        if (vehicle == null) {
+            throw new java.lang.NullPointerException("car is null");
+        }
         Vehicle v = vehicleRepository.save(vehicle);
         logger.info("Vehicle has been updated on database");
         messagingService.sendVehicleUpdateMessage(v.getAssociationId(), v.getVehicleId());

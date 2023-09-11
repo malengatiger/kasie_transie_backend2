@@ -1,7 +1,6 @@
 package com.boha.kasietransie.data.repos;
 
-import com.boha.kasietransie.data.ExampleFile;
-import com.boha.kasietransie.data.dto.AmbassadorCheckIn;
+import com.boha.kasietransie.data.dto.ExampleFile;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;

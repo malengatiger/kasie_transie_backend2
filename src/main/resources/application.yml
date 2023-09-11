@@ -22,7 +22,7 @@ spring:
       embedded:
             version: 3.6.5
     profiles:
-        active: prod
+        active: dev
     servlet:
         multipart:
             max-file-size: 1000MB

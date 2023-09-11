@@ -30,19 +30,6 @@
 		</dependencies>
 	</dependencyManagement>
 
-	<!--	<dependencyManagement>-->
-<!--		<dependencies>-->
-<!--			&lt;!&ndash;Google Cloud Platform Libraries BOM &ndash;&gt;-->
-<!--			<dependency>-->
-<!--				<groupId>com.google.cloud</groupId>-->
-<!--				<artifactId>libraries-bom</artifactId>-->
-<!--				<version>${gcp-libraries-bom.version}</version>-->
-<!--				<type>pom</type>-->
-<!--				<scope>import</scope>-->
-<!--			</dependency>-->
-<!--		</dependencies>-->
-<!--	</dependencyManagement>-->
-
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

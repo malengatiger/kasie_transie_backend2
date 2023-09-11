@@ -1,4 +1,4 @@
-package com.boha.kasietransie.data;
+package com.boha.kasietransie.data.dto;
 
 import com.boha.kasietransie.util.E;
 import com.mongodb.client.MongoCollection;
